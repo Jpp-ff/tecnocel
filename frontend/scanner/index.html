@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
+  <title>Tecnocel — Escáner</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root{--black:#080808;--dark:#111;--surface:#1a1a1a;--border:#2a2a2a;--gray:#888;--white:#f5f5f5;--pink:#e91e8c;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--font-body:'Outfit',sans-serif;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--black);color:var(--white);font-family:'Outfit',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+
+    .header{width:100%;background:var(--dark);border-bottom:1px solid var(--border);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;}
+    .header-logo{font-size:1.2rem;font-weight:700;letter-spacing:2px;color:var(--white);}
+    .header-logo span{color:var(--pink);}
+    .header-sub{font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);}
+    .header a{font-size:.8rem;color:var(--gray);text-decoration:none;}
+    .header a:hover{color:var(--pink);}
+
+    .scanner-wrap{width:100%;max-width:480px;padding:1.5rem;flex:1;display:flex;flex-direction:column;gap:1.2rem;}
+    .cam-box{position:relative;width:100%;aspect-ratio:1;background:var(--dark);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;}
+    #reader{width:100%!important;}
+    #reader video{width:100%!important;height:100%!important;object-fit:cover;border-radius:10px;}
+    .scan-frame{position:absolute;inset:0;pointer-events:none;z-index:10;}
+    .scan-corner{position:absolute;width:24px;height:24px;border-color:var(--pink);border-style:solid;}
+    .scan-corner.tl{top:16px;left:16px;border-width:3px 0 0 3px;border-radius:4px 0 0 0;}
+    .scan-corner.tr{top:16px;right:16px;border-width:3px 3px 0 0;border-radius:0 4px 0 0;}
+    .scan-corner.bl{bottom:16px;left:16px;border-width:0 0 3px 3px;border-radius:0 0 0 4px;}
+    .scan-corner.br{bottom:16px;right:16px;border-width:0 3px 3px 0;border-radius:0 0 4px 0;}
+    .scan-line{position:absolute;left:20px;right:20px;height:2px;background:linear-gradient(to right,transparent,var(--pink),transparent);animation:scanMove 2s ease-in-out infinite;top:20px;}
+    @keyframes scanMove{0%,100%{top:20px;opacity:1}50%{top:calc(100% - 20px);opacity:.7}}
+
+    .resultado{background:var(--dark);border:1px solid var(--border);border-radius:10px;padding:1.2rem;display:none;}
+    .resultado.show{display:block;}
+    .res-icon{font-size:2.5rem;text-align:center;margin-bottom:.6rem;}
+    .res-titulo{font-size:1rem;font-weight:600;text-align:center;margin-bottom:.3rem;}
+    .res-modelo{font-size:.88rem;color:var(--gray);text-align:center;margin-bottom:1rem;}
+    .res-stock{text-align:center;font-size:1.8rem;font-weight:700;font-family:monospace;}
+    .res-stock.ok{color:var(--green);}
+    .res-stock.warn{color:var(--yellow);}
+    .res-stock.empty{color:var(--red);}
+    .btn{width:100%;padding:.85rem;border-radius:6px;font-size:.95rem;font-weight:600;border:none;cursor:pointer;margin-top:1rem;font-family:inherit;}
+    .btn-outline{background:var(--surface);color:var(--gray);border:1px solid var(--border);}
+    .btn-outline:hover{border-color:var(--pink);color:var(--pink);}
+
+    .status-bar{display:flex;align-items:center;gap:.6rem;padding:.75rem 1rem;border-radius:6px;font-size:.85rem;}
+    .status-bar.scanning{background:rgba(233,30,140,.08);border:1px solid rgba(233,30,140,.25);color:var(--pink);}
+    .status-bar.success{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:var(--green);}
+    .status-bar.error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:var(--red);}
+    .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .dot.pink{background:var(--pink);animation:blink 1s ease-in-out infinite;}
+    .dot.green{background:var(--green);}
+    .dot.red{background:var(--red);}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+    .instrucciones{font-size:.82rem;color:var(--gray);text-align:center;line-height:1.7;}
+    .instrucciones strong{color:var(--white);}
+  </style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="header-logo">tecn<span>o</span>cel</div>
+    <div class="header-sub">Escáner de inventario</div>
+  </div>
+  <a href="../admin/index.html">← Panel</a>
+</div>
+
+<div class="scanner-wrap">
+  <div class="status-bar scanning" id="statusBar">
+    <div class="dot pink" id="statusDot"></div>
+    <span id="statusText">Apunta la cámara al código QR de la pantalla</span>
+  </div>
+
+  <div class="cam-box">
+    <div id="reader"></div>
+    <div class="scan-frame">
+      <div class="scan-corner tl"></div>
+      <div class="scan-corner tr"></div>
+      <div class="scan-corner bl"></div>
+      <div class="scan-corner br"></div>
+      <div class="scan-line"></div>
+    </div>
+  </div>
+
+  <p class="instrucciones">
+    Escanea el código QR pegado en la pantalla.<br>
+    El sistema <strong>descuenta 1 unidad</strong> automáticamente en Google Sheets, desde cualquier red.
+  </p>
+
+  <div class="resultado" id="resultado">
+    <div class="res-icon" id="resIcon"></div>
+    <div class="res-titulo" id="resTitulo"></div>
+    <div class="res-modelo" id="resModelo"></div>
+    <div class="res-stock" id="resStock"></div>
+    <button class="btn btn-outline" onclick="reiniciarEscaner()">Escanear otro</button>
+  </div>
+</div>
+
+<script>
+  /* ── CONFIGURACIÓN — cambia esto por la URL de Railway cuando despliegues ── */
+  const API_URL = 'http://localhost:3000';
+
+  /* ── SESIÓN — el escáner reutiliza la sesión del panel; si nadie inició sesión, lo mandamos al login ── */
+  if(!localStorage.getItem('tc_admin_auth')){
+    window.location.href = '../admin/login.html';
+  }
+
+  let escaner = null;
+  let procesando = false;
+
+  function setStatus(tipo, texto){
+    const bar = document.getElementById('statusBar');
+    const dot = document.getElementById('statusDot');
+    bar.className = 'status-bar '+tipo;
+    dot.className = 'dot '+{scanning:'pink',success:'green',error:'red'}[tipo];
+    document.getElementById('statusText').textContent = texto;
+  }
+
+  function iniciarEscaner(){
+    escaner = new Html5Qrcode('reader');
+    escaner.start(
+      {facingMode:'environment'},
+      {fps:10, qrbox:{width:220, height:220}, aspectRatio:1.0},
+      onQRSuccess,
+      ()=>{}
+    ).catch(()=>{
+      setStatus('error','No se pudo acceder a la cámara. Permite el permiso.');
+    });
+  }
+
+  async function onQRSuccess(decodedText){
+    if(procesando) return;
+    procesando = true;
+
+    let data;
+    try { data = JSON.parse(decodedText); }
+    catch(e){ setStatus('error','QR inválido — no es una etiqueta Tecnocel'); setTimeout(()=>{procesando=false;},2000); return; }
+
+    if(!data.id){ setStatus('error','QR sin ID válido'); setTimeout(()=>{procesando=false;},2000); return; }
+
+    const resultado = await descontarEnBackend(data.id);
+    mostrarResultado(resultado);
+    escaner.stop().catch(()=>{});
+  }
+
+  async function descontarEnBackend(id){
+    const token = localStorage.getItem('tc_admin_auth');
+    try {
+      const res = await fetch(API_URL + '/api/inventario/' + id + '/usar', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+        body: JSON.stringify({ motivo: 'reparacion' }),
+      });
+      if(res.status === 401){
+        localStorage.removeItem('tc_admin_auth');
+        window.location.href = '../admin/login.html';
+        return { ok:false, msg:'Sesión expirada' };
+      }
+      const data = await res.json();
+      if(!data.success) return { ok:false, msg: data.message };
+      return { ok:true, modelo: data.data.modelo, stock: data.data.stock };
+    } catch(e){
+      return { ok:false, msg: 'No se pudo conectar con el servidor.' };
+    }
+  }
+
+  function mostrarResultado(res){
+    const box = document.getElementById('resultado');
+    box.classList.add('show');
+    if(res.ok){
+      const stockBajo = res.stock <= 3;
+      const sinStock = res.stock === 0;
+      document.getElementById('resIcon').textContent = sinStock?'⚠':stockBajo?'●':'✓';
+      document.getElementById('resTitulo').textContent = sinStock?'Último usado — sin stock':stockBajo?'Stock bajo — considera reabastecer':'Pantalla descontada correctamente';
+      document.getElementById('resModelo').textContent = res.modelo;
+      const stockEl = document.getElementById('resStock');
+      stockEl.textContent = res.stock+' en stock';
+      stockEl.className = 'res-stock '+(sinStock?'empty':stockBajo?'warn':'ok');
+      setStatus('success','Descontado: '+res.modelo);
+    } else {
+      document.getElementById('resIcon').textContent = '✕';
+      document.getElementById('resTitulo').textContent = 'No se pudo descontar';
+      document.getElementById('resModelo').textContent = res.msg||'Error desconocido';
+      document.getElementById('resStock').textContent = '';
+      setStatus('error', res.msg||'Error');
+    }
+  }
+
+  function reiniciarEscaner(){
+    document.getElementById('resultado').classList.remove('show');
+    setStatus('scanning','Apunta la cámara al código QR de la pantalla');
+    procesando = false;
+    iniciarEscaner();
+  }
+
+  window.addEventListener('load', iniciarEscaner);
+</script>
+</body>
+</html>

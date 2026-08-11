@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Tecnocel — Laboratorio Celular</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --black:#080808;--dark:#111111;--surface:#181818;
+      --border:#2a2a2a;--gray:#4a4a4a;--gray-mid:#888888;
+      --gray-lt:#c0c0c0;--white:#f5f5f5;
+      --pink:#e91e8c;--pink-dim:#9e1460;
+      --font-disp:'Bebas Neue',sans-serif;
+      --font-body:'Outfit',sans-serif;
+      --ease:cubic-bezier(.25,.46,.45,.94);
+    }
+    body.light{
+  --black:#f2f0eb;--dark:#ffffff;--surface:#f7f5f0;
+  --border:#e0ddd4;--gray:#6b6a63;--gray-mid:#8a8880;
+  --gray-lt:#4a4944;--white:#171614;
+  --pink:#e91e8c;--pink-dim:#c7186f;
+}
+body{transition:background .2s,color .2s;}
+
+.theme-toggle{
+  display:flex;align-items:center;
+  font-size:.78rem;letter-spacing:1px;text-transform:uppercase;
+  color:var(--gray-mid);cursor:none;
+  border:1px solid var(--border);padding:.4rem .9rem;border-radius:20px;
+  transition:border-color .2s,color .2s;
+  white-space:nowrap;
+}
+.theme-toggle:hover{border-color:var(--pink);color:var(--pink);}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
+    body{background:var(--black);color:var(--white);font-family:var(--font-body);overflow-x:hidden;cursor:none;}
+
+    .cursor-dot{position:fixed;top:0;left:0;z-index:9999;width:8px;height:8px;background:var(--pink);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;}
+    .cursor-ring{position:fixed;top:0;left:0;z-index:9998;width:36px;height:36px;border:1.5px solid var(--pink);border-radius:50%;transform:translate(-50%,-50%);transition:width .2s,height .2s,opacity .2s;pointer-events:none;}
+    .cursor-ring.grow{width:56px;height:56px;opacity:.6;}
+    .progress-bar{position:fixed;top:0;left:0;z-index:200;height:2px;background:var(--pink);width:0%;}
+
+    /* ── NAV ── */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 3rem;transition:background .4s,backdrop-filter .4s;}
+    nav.scrolled{background:rgba(8,8,8,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);}
+    .nav-logo{display:flex;align-items:center;text-decoration:none;}
+    /* FIX LOGO — mix-blend-mode elimina el fondo negro del JPEG */
+    .logo-img{
+      height:44px;
+      object-fit:contain;
+      display:block;
+      mix-blend-mode:screen;
+      filter:brightness(1.15) contrast(1.05);
+    }
+    .hero-logo-img{
+      height:clamp(90px,16vw,160px);
+      object-fit:contain;
+      display:block;
+      margin:0 auto 1.8rem;
+      mix-blend-mode:screen;
+      filter:brightness(1.15) contrast(1.05) drop-shadow(0 0 28px rgba(233,30,140,.4));
+      animation:fadeUp .9s .08s var(--ease) both;
+    }
+    .nav-links{display:flex;align-items:center;gap:2.2rem;list-style:none;}
+    .nav-links a{font-size:.8rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-mid);text-decoration:none;transition:color .2s;white-space:nowrap;}
+    .nav-links a:hover{color:var(--pink);}
+    .nav-cta{background:var(--pink)!important;color:#fff!important;padding:.5rem 1.3rem;border-radius:4px;font-weight:600;}
+    .nav-cta:hover{background:var(--pink-dim)!important;}
+    @media(max-width:768px){nav{padding:.9rem 1.2rem;}.nav-links li:not(:last-child){display:none;}}
+
+    /* ── HERO ── */
+    #hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+    .hero-video-wrap{position:absolute;inset:0;}
+    .hero-video-wrap video{width:100%;height:100%;object-fit:cover;filter:brightness(.18) saturate(1.8);}
+    .hero-video-wrap::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 60% 50%,rgba(233,30,140,.13) 0%,transparent 70%);pointer-events:none;}
+    .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(233,30,140,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(233,30,140,.04) 1px,transparent 1px);background-size:60px 60px;animation:gridDrift 30s linear infinite;}
+    @keyframes gridDrift{to{background-position:60px 60px;}}
+    .hero-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(8,8,8,.2) 0%,rgba(8,8,8,.0) 40%,rgba(8,8,8,.97) 100%);}
+    .hero-content{position:relative;z-index:2;text-align:center;padding:0 2rem;max-width:920px;}
+    .hero-eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--pink);border:1px solid rgba(233,30,140,.35);padding:.4rem 1.1rem;border-radius:2px;margin-bottom:2rem;animation:fadeUp .8s var(--ease) both;}
+    .hero-eyebrow::before,.hero-eyebrow::after{content:'';display:block;width:16px;height:1px;background:var(--pink);}
+    .hero-sub{font-size:clamp(.92rem,2vw,1.18rem);color:var(--gray-mid);font-weight:300;letter-spacing:1px;animation:fadeUp .9s .22s var(--ease) both;}
+    .hero-sub strong{color:var(--gray-lt);font-weight:500;}
+    .hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:2.5rem;animation:fadeUp .9s .36s var(--ease) both;}
+    .btn-primary{display:inline-flex;align-items:center;gap:.6rem;background:var(--pink);color:#fff;padding:.9rem 2rem;border-radius:4px;font-size:.9rem;font-weight:600;text-decoration:none;border:none;cursor:none;transition:background .2s,transform .18s,box-shadow .2s;}
+    .btn-primary:hover{background:var(--pink-dim);transform:translateY(-2px);box-shadow:0 12px 30px rgba(233,30,140,.35);}
+    .btn-outline{display:inline-flex;align-items:center;gap:.6rem;background:transparent;color:var(--gray-lt);padding:.9rem 2rem;border-radius:4px;font-size:.9rem;font-weight:500;text-decoration:none;border:1px solid var(--border);cursor:none;transition:border-color .2s,color .2s,transform .18s;}
+    .btn-outline:hover{border-color:var(--pink);color:var(--pink);transform:translateY(-2px);}
+    .hero-stats{display:flex;gap:2.5rem;justify-content:center;margin-top:3.5rem;animation:fadeUp .9s .5s var(--ease) both;}
+    .stat{text-align:center;}
+    .stat-num{font-family:var(--font-disp);font-size:2.8rem;letter-spacing:2px;color:var(--white);line-height:1;}
+    .stat-num span{color:var(--pink);}
+    .stat-lbl{font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--gray-mid);margin-top:.3rem;}
+    .stat-divider{width:1px;background:var(--border);align-self:stretch;}
+    .scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;z-index:2;animation:fadeUp 1s 1s var(--ease) both;}
+    .scroll-hint span{font-size:.62rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--gray);}
+    .scroll-line{width:1px;height:46px;background:var(--border);position:relative;overflow:hidden;}
+    .scroll-line::after{content:'';position:absolute;top:-100%;left:0;right:0;bottom:0;background:var(--pink);animation:scrollAnim 1.8s ease-in-out infinite;}
+    @keyframes scrollAnim{to{top:100%;}}
+
+    /* ── SECCIONES ── */
+    .section-tag{font-size:.68rem;letter-spacing:3px;text-transform:uppercase;color:var(--pink);margin-bottom:1rem;display:flex;align-items:center;gap:.7rem;}
+    .section-tag::after{content:'';flex:1 0 40px;max-width:60px;height:1px;background:var(--pink);opacity:.5;}
+    .section-title{font-family:var(--font-disp);font-size:clamp(2.6rem,6vw,4.8rem);letter-spacing:2px;line-height:1;color:var(--white);margin-bottom:1rem;}
+    .section-sub{font-size:.98rem;color:var(--gray-mid);font-weight:300;max-width:520px;line-height:1.7;margin-bottom:3.5rem;}
+
+    /* ── SERVICIOS ── */
+    #servicios{padding:7rem 3rem;max-width:1300px;margin:0 auto;}
+    .services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;border:1px solid var(--border);overflow:hidden;border-radius:8px;}
+    .service-card{background:var(--dark);padding:2.5rem 2rem;position:relative;overflow:hidden;cursor:none;transition:background .3s;}
+    .service-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(233,30,140,.08) 0%,transparent 60%);opacity:0;transition:opacity .3s;}
+    .service-card:hover{background:var(--surface);}
+    .service-card:hover::before{opacity:1;}
+    .service-icon{font-size:2.2rem;margin-bottom:1.4rem;display:block;}
+    .service-num{position:absolute;top:1.5rem;right:1.5rem;font-family:var(--font-disp);font-size:3.8rem;color:var(--border);line-height:1;transition:color .3s;}
+    .service-card:hover .service-num{color:rgba(233,30,140,.15);}
+    .service-name{font-family:var(--font-disp);font-size:1.55rem;letter-spacing:1px;color:var(--white);margin-bottom:.75rem;}
+    .service-desc{font-size:.86rem;color:var(--gray-mid);line-height:1.7;}
+    .service-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1.4rem;}
+    .tag{font-size:.66rem;letter-spacing:1px;text-transform:uppercase;color:var(--pink);border:1px solid rgba(233,30,140,.3);padding:.22rem .55rem;border-radius:2px;}
+    .service-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--pink);transform:scaleX(0);transform-origin:left;transition:transform .4s var(--ease);}
+    .service-card:hover .service-bar{transform:scaleX(1);}
+
+    /* ── PROCESO ── */
+    #proceso{padding:7rem 3rem;background:var(--dark);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+    .proceso-inner{max-width:1300px;margin:0 auto;}
+    .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;margin-top:3.5rem;}
+    .step{text-align:center;padding:1.8rem 1rem;}
+    .step-circle{width:62px;height:62px;border:1.5px solid rgba(233,30,140,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.4rem;font-family:var(--font-disp);font-size:1.7rem;color:var(--pink);position:relative;}
+    .step-circle::before{content:'';position:absolute;inset:6px;border-radius:50%;background:rgba(233,30,140,.08);}
+    .step-name{font-family:var(--font-disp);font-size:1.2rem;letter-spacing:1px;color:var(--white);margin-bottom:.6rem;}
+    .step-desc{font-size:.84rem;color:var(--gray-mid);line-height:1.6;}
+
+    /* ── HORARIO ── */
+    #info{padding:6rem 3rem;max-width:1300px;margin:0 auto;}
+    .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;margin-top:3rem;}
+    .info-card{background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:2rem;border-left:3px solid var(--pink);}
+    .info-icon{font-size:1.7rem;margin-bottom:1rem;}
+    .info-title{font-family:var(--font-disp);font-size:1.25rem;letter-spacing:1px;color:var(--white);margin-bottom:1rem;}
+    .info-row{display:flex;justify-content:space-between;align-items:center;padding:.42rem 0;border-bottom:1px solid var(--border);font-size:.86rem;}
+    .info-row:last-child{border-bottom:none;}
+    .dia{color:var(--gray-mid);}
+    .hora{color:var(--white);font-weight:500;}
+    .hora.pink{color:var(--pink);}
+    .hora.cerrado{color:var(--gray);font-style:italic;font-weight:400;}
+    .dir-text{font-size:.88rem;color:var(--gray-lt);line-height:1.8;}
+    .dir-text strong{color:var(--white);display:block;margin-bottom:.3rem;}
+    .dir-link{display:inline-flex;align-items:center;gap:.4rem;margin-top:1rem;font-size:.78rem;letter-spacing:1px;text-transform:uppercase;color:var(--pink);text-decoration:none;border-bottom:1px solid rgba(233,30,140,.3);padding-bottom:2px;transition:border-color .2s;}
+    .dir-link:hover{border-color:var(--pink);}
+
+    /* ── COTIZAR ── */
+    #cotizar{padding:7rem 3rem;max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;}
+    .cta-features{list-style:none;display:flex;flex-direction:column;gap:.85rem;margin-top:1.8rem;}
+    .cta-features li{display:flex;align-items:center;gap:.7rem;font-size:.88rem;color:var(--gray-lt);}
+    .cta-features li::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--pink);flex-shrink:0;}
+    .cta-form{background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:2.4rem;}
+    .form-title{font-family:var(--font-disp);font-size:1.75rem;letter-spacing:1px;color:var(--white);margin-bottom:.4rem;}
+    .form-sub{font-size:.84rem;color:var(--gray-mid);margin-bottom:1.8rem;}
+    .form-group{margin-bottom:1.1rem;}
+    .form-group label{display:block;font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-mid);margin-bottom:.45rem;}
+    .form-group input,.form-group select,.form-group textarea{width:100%;background:var(--black);border:1px solid var(--border);color:var(--white);padding:.75rem .95rem;border-radius:4px;font-family:var(--font-body);font-size:.88rem;outline:none;transition:border-color .2s;cursor:none;}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--pink);}
+    .form-group select option{background:var(--dark);}
+    .form-group textarea{resize:vertical;min-height:88px;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+    .btn-wa{width:100%;display:flex;align-items:center;justify-content:center;gap:.7rem;background:#25D366;color:#fff;padding:.95rem;border-radius:4px;font-family:var(--font-body);font-size:.93rem;font-weight:600;border:none;cursor:none;transition:background .2s,transform .15s;margin-top:1.4rem;}
+    .btn-wa:hover{background:#1da651;transform:scale(1.02);}
+
+    /* ── FOOTER ── */
+    footer{background:var(--dark);border-top:1px solid var(--border);padding:3rem;}
+    .footer-inner{max-width:1300px;margin:0 auto;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:2rem;}
+    .footer-logo{display:block;}
+    .footer-logo img{height:38px;object-fit:contain;display:block;mix-blend-mode:screen;filter:brightness(1.15) contrast(1.05);margin-bottom:.5rem;}
+    .footer-sub{font-size:.76rem;letter-spacing:1px;color:var(--gray);}
+    .footer-col-title{font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:.9rem;}
+    .footer-links{list-style:none;display:flex;flex-direction:column;gap:.55rem;}
+    .footer-links a{font-size:.84rem;color:var(--gray-mid);text-decoration:none;transition:color .2s;}
+    .footer-links a:hover{color:var(--pink);}
+    .footer-hours{font-size:.82rem;color:var(--gray-mid);line-height:2;}
+    .footer-hours strong{color:var(--white);}
+    .footer-copy{max-width:1300px;margin:.1rem auto 0;border-top:1px solid var(--border);padding-top:1.4rem;font-size:.73rem;color:var(--gray);text-align:center;}
+
+    /* ── WA FLOTANTE ── */
+    .wa-float{position:fixed;bottom:2rem;right:2rem;z-index:200;background:#25D366;width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:none;box-shadow:0 4px 20px rgba(37,211,102,.4);transition:transform .2s,box-shadow .2s;text-decoration:none;animation:pulseBubble 2.5s ease-in-out infinite;}
+    .wa-float:hover{transform:scale(1.1);animation:none;}
+    .wa-float svg{width:26px;height:26px;fill:#fff;}
+    .wa-tooltip{position:absolute;right:68px;background:var(--dark);border:1px solid var(--border);color:var(--white);font-size:.78rem;padding:.38rem .8rem;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transform:translateX(6px);transition:opacity .2s,transform .2s;}
+    .wa-float:hover .wa-tooltip{opacity:1;transform:translateX(0);}
+    @keyframes pulseBubble{0%,100%{box-shadow:0 4px 20px rgba(37,211,102,.4)}50%{box-shadow:0 4px 32px rgba(37,211,102,.65)}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s var(--ease),transform .7s var(--ease);}
+    .reveal.visible{opacity:1;transform:translateY(0);}
+
+    @media(max-width:900px){
+      #cotizar{grid-template-columns:1fr;gap:3rem;}
+      .form-row{grid-template-columns:1fr;}
+      .footer-inner{flex-direction:column;}
+      #servicios,#proceso,#cotizar,#info{padding:5rem 1.5rem;}
+      .hero-stats{gap:1.4rem;}
+    }
+  </style>
+</head>
+<body>
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ══ NAV ══ -->
+<nav id="mainNav">
+  <a href="#" class="nav-logo">
+    <img class="logo-img" src="assets/img/logo tecnocel - Editado.png" alt="Tecnocel Laboratorio Celular"/>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#servicios">Servicios</a></li>
+    <li><a href="#proceso">Proceso</a></li>
+    <li><a href="#info">Horario</a></li>
+    <li><div class="theme-toggle" onclick="alternarTema()" id="themeToggle">Modo claro</div></li>
+    <li><a href="#cotizar" class="nav-cta">Cotizar ahora</a></li>
+  </ul>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section id="hero">
+  <div class="hero-video-wrap">
+    <video autoplay muted loop playsinline>
+      <source src="assets/videos/reparacion.mp4"             type="video/mp4"/>
+      <source src="assets/videos/reparacion-timelapse.mp4"   type="video/mp4"/>
+      <source src="assets/videos/PXL_20260523_005606390.mp4" type="video/mp4"/>
+    </video>
+  </div>
+  <div class="hero-grid"></div>
+  <div class="hero-overlay"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">Laboratorio Celular Profesional</div>
+
+    <img class="hero-logo-img"
+         src="assets/img/logo tecnocel - Editado.png"
+         alt="Tecnocel"/>
+
+    <p class="hero-sub">
+      <strong>Reparación profesional de electrónica.</strong><br>
+      Micro-soldadura · Pantallas · Consolas · Computadoras
+    </p>
+
+    <div class="hero-actions">
+      <a href="#cotizar" class="btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Cotizar mi reparación
+      </a>
+      <a href="#servicios" class="btn-outline">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        Ver servicios
+      </a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num" data-target="500">0<span>+</span></div><div class="stat-lbl">Reparaciones</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><div class="stat-num" data-target="48">0<span>h</span></div><div class="stat-lbl">Tiempo promedio</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><div class="stat-num">98<span>%</span></div><div class="stat-lbl">Satisfacción</div></div>
+    </div>
+  </div>
+  <div class="scroll-hint"><span>Scroll</span><div class="scroll-line"></div></div>
+</section>
+
+<!-- ══ SERVICIOS ══ -->
+<section id="servicios">
+  <div class="section-tag">Especialidades</div>
+  <h2 class="section-title reveal">NUESTROS<br>SERVICIOS</h2>
+  <p class="section-sub reveal">Diagnóstico preciso, reparación garantizada.</p>
+  <div class="services-grid">
+    <div class="service-card reveal">
+      <span class="service-icon"></span><span class="service-num">01</span>
+      <div class="service-name">MICRO-SOLDADURA</div>
+      <p class="service-desc">Reparación a nivel de componente en tarjetas madre. Reballing BGA, cambio de IC, recuperación por daño de agua.</p>
+      <div class="service-tags"><span class="tag">Placa madre</span><span class="tag">BGA</span><span class="tag">Recuperación</span></div>
+      <div class="service-bar"></div>
+    </div>
+    <div class="service-card reveal">
+      <span class="service-icon"></span><span class="service-num">02</span>
+      <div class="service-name">PANTALLAS</div>
+      <p class="service-desc">Cambio de pantallas originales y premium en iPhone, Samsung, Motorola, Xiaomi y más. Prueba de calidad y garantía.</p>
+      <div class="service-tags"><span class="tag">iPhone</span><span class="tag">Samsung</span><span class="tag">OLED/LCD</span></div>
+      <div class="service-bar"></div>
+    </div>
+    <div class="service-card reveal">
+      <span class="service-icon"></span><span class="service-num">03</span>
+      <div class="service-name">CONSOLAS</div>
+      <p class="service-desc">PlayStation, Xbox, Nintendo Switch. Limpieza, pasta térmica, puertos y lectores.</p>
+      <div class="service-tags"><span class="tag">PS4/PS5</span><span class="tag">Xbox</span><span class="tag">Switch</span></div>
+      <div class="service-bar"></div>
+    </div>
+    <div class="service-card reveal">
+      <span class="service-icon"></span><span class="service-num">04</span>
+      <div class="service-name">COMPUTADORAS</div>
+      <p class="service-desc">Laptops y desktops. Formateo, pasta térmica, upgrades de SSD y RAM, limpieza profunda.</p>
+      <div class="service-tags"><span class="tag">Laptop</span><span class="tag">Desktop</span><span class="tag">Upgrade</span></div>
+      <div class="service-bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PROCESO ══ -->
+<section id="proceso">
+  <div class="proceso-inner">
+    <div class="section-tag">¿Cómo funciona?</div>
+    <h2 class="section-title reveal">PROCESO<br>SIMPLE</h2>
+    <div class="steps">
+      <div class="step reveal"><div class="step-circle">1</div><div class="step-name">Diagnóstico</div><p class="step-desc">Traes tu dispositivo o cotizas en línea. Evaluamos sin costo adicional.</p></div>
+      <div class="step reveal"><div class="step-circle">2</div><div class="step-name">Cotización</div><p class="step-desc">Presupuesto claro y transparente antes de tocar tu equipo.</p></div>
+      <div class="step reveal"><div class="step-circle">3</div><div class="step-name">Reparación</div><p class="step-desc">Técnicos especializados con herramientas profesionales.</p></div>
+      <div class="step reveal"><div class="step-circle">4</div><div class="step-name">Entrega</div><p class="step-desc">Pruebas de calidad, limpieza y garantía por escrito.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ HORARIO Y DIRECCIÓN ══ -->
+<section id="info">
+  <div class="section-tag">Encuéntranos</div>
+  <h2 class="section-title reveal">HORARIO &amp;<br>DIRECCIÓN</h2>
+  <div class="info-grid">
+    <div class="info-card reveal">
+      <div class="info-icon"></div>
+      <div class="info-title">HORARIO DE ATENCIÓN</div>
+      <div class="info-row"><span class="dia">Lunes</span>    <span class="hora pink">11:00 am – 8:00 pm</span></div>
+      <div class="info-row"><span class="dia">Martes</span>   <span class="hora pink">11:00 am – 8:00 pm</span></div>
+      <div class="info-row"><span class="dia">Miércoles</span><span class="hora pink">11:00 am – 8:00 pm</span></div>
+      <div class="info-row"><span class="dia">Jueves</span>   <span class="hora pink">11:00 am – 8:00 pm</span></div>
+      <div class="info-row"><span class="dia">Viernes</span>  <span class="hora pink">11:00 am – 8:00 pm</span></div>
+      <div class="info-row"><span class="dia">Sábado</span>   <span class="hora">11:00 am – 6:00 pm</span></div>
+      <div class="info-row"><span class="dia">Domingo</span>  <span class="hora cerrado">Cerrado</span></div>
+    </div>
+    <div class="info-card reveal">
+      <div class="info-icon"></div>
+      <div class="info-title">DIRECCIÓN</div>
+      <div class="dir-text">
+        <strong>Tecnocel — Laboratorio Celular</strong>
+        Calle Manuel Saldaña sur #16, Chiautempan Centro<br>
+        Tlaxcala, Tlaxcala, México
+      </div>
+      <a class="dir-link" href="https://maps.app.goo.gl/iRMKuqVWkcm59ZE17" target="_blank" rel="noopener">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Ver en Google Maps
+      </a>
+    </div>
+    <div class="info-card reveal">
+      <div class="info-icon"></div>
+      <div class="info-title">CONTACTO DIRECTO</div>
+      <div class="dir-text">
+        <strong>WhatsApp</strong>246 400 7500<br><br>
+        <strong>Atención personalizada</strong>Lun–Vie 11am–8pm · Sáb 11am–6pm
+      </div>
+      <a class="dir-link" href="#cotizar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Cotizar ahora
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ COTIZAR ══ -->
+<section id="cotizar">
+  <div class="cta-left reveal">
+    <div class="section-tag">¿Listo para reparar?</div>
+    <h2 class="section-title">COTIZA<br>AHORA</h2>
+    <p class="section-sub">Mándanos los detalles y te respondemos en minutos por WhatsApp.</p>
+    <ul class="cta-features">
+      <li>Diagnóstico sin costo</li>
+      <li>Presupuesto en menos de 30 minutos</li>
+      <li>Refacciones originales y premium</li>
+      <li>Técnicos con años de experiencia</li>
+    </ul>
+  </div>
+  <div class="cta-form reveal">
+    <div class="form-title">ENVIAR COTIZACIÓN</div>
+    <p class="form-sub">Recibirás respuesta por WhatsApp en minutos.</p>
+    <div class="form-row">
+      <div class="form-group"><label>Nombre</label><input type="text" id="nombre" placeholder="Tu nombre"/></div>
+      <div class="form-group"><label>WhatsApp</label><input type="tel" id="telefono" placeholder="246 123 4567"/></div>
+    </div>
+    <div class="form-group">
+      <label>Tipo de dispositivo</label>
+      <select id="dispositivo">
+        <option value="">Selecciona...</option>
+        <option>Smartphone (iPhone)</option>
+        <option>Smartphone (Samsung)</option>
+        <option>Smartphone (Motorola)</option>
+        <option>Smartphone (Xiaomi/Redmi)</option>
+        <option>Smartphone (Huawei/Honor)</option>
+        <option>Smartphone (OPPO)</option>
+        <option>Tablet</option>
+        <option>Laptop</option>
+        <option>Computadora de escritorio</option>
+        <option>Consola (PS4/PS5)</option>
+        <option>Consola (Xbox)</option>
+        <option>Consola (Nintendo Switch)</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Modelo específico</label>
+      <input type="text" id="modelo" placeholder="Ej: iPhone 13, Galaxy A54, PS5 Slim..."/>
+    </div>
+    <div class="form-group">
+      <label>Describe el problema</label>
+      <textarea id="problema" placeholder="Ej: pantalla rota, no enciende, se calienta..."></textarea>
+    </div>
+    <button class="btn-wa" onclick="enviarWA()">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Enviar cotización por WhatsApp
+    </button>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">
+        <img src="assets/img/logo tecnocel - Editado.png" alt="Tecnocel"/>
+      </div>
+      <div class="footer-sub">((  laboratorio celular  ))</div>
+    </div>
+    <div>
+      <div class="footer-col-title">Búsqueda</div>
+      <ul class="footer-links">
+        <li><a href="#servicios">Servicios</a></li>
+        <li><a href="#proceso">Proceso</a></li>
+        <li><a href="#info">Horario</a></li>
+        <li><a href="#cotizar">Cotizar</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Horario</div>
+      <div class="footer-hours">
+        <strong>Lun – Vie</strong> 11:00 am – 8:00 pm<br>
+        <strong>Sábado&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong>11:00 am – 6:00 pm<br>
+        <strong>Domingo&nbsp;&nbsp;</strong>Cerrado
+      </div>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:.72rem;color:var(--gray);margin-top:.8rem;">
+  <a href="admin/login.html" style="color:var(--gray);text-decoration:none;">Solo personal — Acceso al panel</a>
+</p>
+  <p class="footer-copy">© 2025 Tecnocel — Laboratorio Celular · Todos los derechos reservados</p>
+</footer>
+
+<!-- ══ WA FLOTANTE ══ -->
+<a class="wa-float" href="https://wa.me/5212464007500?text=Hola%2C%20quiero%20cotizar%20una%20reparaci%C3%B3n" target="_blank" rel="noopener">
+  <span class="wa-tooltip">¿Cotizar ahora?</span>
+  <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<script>
+  // CURSOR
+  function alternarTema(){
+  const esClaro = document.body.classList.toggle('light');
+  localStorage.setItem('tc_theme', esClaro ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = esClaro ? 'Modo oscuro' : 'Modo claro';
+}
+(function cargarTema(){
+  if(localStorage.getItem('tc_theme') === 'light'){
+    document.body.classList.add('light');
+    document.getElementById('themeToggle').textContent = 'Modo oscuro';
+  }
+})();
+  const dot=document.getElementById('cursorDot'),ring=document.getElementById('cursorRing');
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.transform='translate(calc('+mx+'px - 50%),calc('+my+'px - 50%))';});
+  (function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.transform='translate(calc('+rx+'px - 50%),calc('+ry+'px - 50%))';requestAnimationFrame(loop);})();
+  document.querySelectorAll('a,button,.service-card').forEach(el=>{el.addEventListener('mouseenter',()=>ring.classList.add('grow'));el.addEventListener('mouseleave',()=>ring.classList.remove('grow'));});
+
+  // NAV + PROGRESS BAR
+  const nav=document.getElementById('mainNav'),bar=document.getElementById('progressBar');
+  window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',window.scrollY>60);bar.style.width=(window.scrollY/(document.body.scrollHeight-window.innerHeight)*100)+'%';});
+
+  // REVEAL
+  const ro=new IntersectionObserver((e,o)=>{e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('visible');o.unobserve(x.target);}});},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
+
+  // CONTADORES
+  const co=new IntersectionObserver((e,o)=>{e.forEach(x=>{if(x.isIntersecting){const el=x.target,t=parseInt(el.dataset.target),s=el.querySelector('span').outerHTML;let c=0;const st=Math.ceil(t/60),ti=setInterval(()=>{c=Math.min(c+st,t);el.innerHTML=c+s;if(c>=t)clearInterval(ti);},24);o.unobserve(el);}});},{threshold:.5});
+  document.querySelectorAll('.stat-num[data-target]').forEach(el=>co.observe(el));
+
+  // WHATSAPP
+  function enviarWA(){
+    const n=document.getElementById('nombre').value.trim();
+    const t=document.getElementById('telefono').value.trim();
+    const d=document.getElementById('dispositivo').value;
+    const m=document.getElementById('modelo').value.trim();
+    const p=document.getElementById('problema').value.trim();
+    if(!n||!d||!p){alert('Por favor completa nombre, dispositivo y descripción del problema.');return;}
+    const mensaje='Hola Tecnocel, quiero cotizar una reparación:\n\n'+
+      'Nombre: '+n+'\n'+
+      'Tel: '+(t||'No proporcionado')+'\n'+
+      'Dispositivo: '+d+'\n'+
+      'Modelo: '+(m||'No especificado')+'\n'+
+      'Problema: '+p+'\n\n'+
+      'Enviado desde tecnocel.com.mx';
+    window.open('https://wa.me/5212464007500?text='+encodeURIComponent(mensaje),'_blank');
+  }
+</script>
+</body>
+</html>

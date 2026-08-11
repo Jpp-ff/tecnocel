@@ -1,0 +1,22 @@
+# Dependencias
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Entorno (NUNCA subir a Git)
+.env
+backend/auth_info/
+backend/credenciales/
+backend/data/usuarios.json
+backend/data/reset_tokens.json
+
+# Reportes generados
+analytics/reportes/*.png
+analytics/datos/*.csv
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log

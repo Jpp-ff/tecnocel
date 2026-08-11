@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Tecnocel — Acceso al Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --black:#080808;--dark:#111111;--surface:#181818;
+      --border:#2a2a2a;--gray:#4a4a4a;--gray-mid:#888888;
+      --gray-lt:#c0c0c0;--white:#f5f5f5;
+      --pink:#e91e8c;--pink-dim:#9e1460;
+      --green:#22c55e;--red:#ef4444;
+      --font-disp:'Bebas Neue',sans-serif;
+      --font-body:'Outfit',sans-serif;
+    }
+    body.light{--black:#f2f0eb;--dark:#ffffff;--surface:#f7f5f0;--border:#e0ddd4;--gray:#6b6a63;--white:#171614;--pink:#e91e8c;--pink-dim:#c7186f;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      background:var(--black);color:var(--white);font-family:var(--font-body);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      padding:1.5rem;transition:background .2s,color .2s;position:relative;overflow-x:hidden;
+    }
+    .bg-grid{
+      position:fixed;inset:0;z-index:0;pointer-events:none;
+      background-image:linear-gradient(rgba(233,30,140,.05) 1px,transparent 1px),
+                        linear-gradient(90deg,rgba(233,30,140,.05) 1px,transparent 1px);
+      background-size:56px 56px;
+      animation:gridDrift 40s linear infinite;
+    }
+    @keyframes gridDrift{to{background-position:56px 56px;}}
+    .bg-glow{
+      position:fixed;inset:0;z-index:0;pointer-events:none;
+      background:radial-gradient(ellipse 60% 45% at 50% 0%,rgba(233,30,140,.14) 0%,transparent 70%);
+    }
+
+    .theme-toggle{
+      position:fixed;top:1.4rem;right:1.4rem;z-index:3;
+      display:flex;align-items:center;gap:.5rem;
+      background:var(--dark);border:1px solid var(--border);
+      padding:.5rem .9rem;border-radius:20px;font-size:.76rem;color:var(--gray-mid);
+      cursor:pointer;transition:border-color .2s,color .2s;
+    }
+    .theme-toggle:hover{border-color:var(--pink);color:var(--pink);}
+
+    .card{
+      position:relative;z-index:1;
+      width:100%;max-width:420px;
+      background:var(--dark);border:1px solid var(--border);border-radius:14px;
+      padding:2.6rem 2.3rem;
+      box-shadow:0 30px 80px rgba(0,0,0,.35);
+      animation:fadeUp .6s cubic-bezier(.25,.46,.45,.94) both;
+    }
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+    .logo-wrap{text-align:center;margin-bottom:1.5rem;}
+    .logo-wrap img{
+      height:64px;object-fit:contain;
+      mix-blend-mode:screen;filter:brightness(1.15) contrast(1.05) drop-shadow(0 0 22px rgba(233,30,140,.3));
+    }
+    .title{font-family:var(--font-disp);font-size:1.7rem;letter-spacing:2px;text-align:center;margin-bottom:.3rem;}
+    .subtitle{font-size:.82rem;color:var(--gray-mid);text-align:center;margin-bottom:1.8rem;}
+
+    .view{display:none;}
+    .view.active{display:block;animation:fadeUp .4s cubic-bezier(.25,.46,.45,.94) both;}
+
+    .form-group{margin-bottom:1.1rem;}
+    .form-group label{display:block;font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-mid);margin-bottom:.5rem;}
+    .form-group input{
+      width:100%;background:var(--black);border:1px solid var(--border);color:var(--white);
+      padding:.8rem 1rem;border-radius:6px;font-family:var(--font-body);font-size:.9rem;
+      outline:none;transition:border-color .2s;
+    }
+    .form-group input:focus{border-color:var(--pink);}
+
+    .btn-primary{
+      width:100%;background:var(--pink);color:#fff;border:none;
+      padding:.85rem;border-radius:6px;font-family:var(--font-body);
+      font-size:.92rem;font-weight:600;cursor:pointer;
+      transition:background .2s,transform .15s;margin-top:.5rem;
+    }
+    .btn-primary:hover{background:var(--pink-dim);transform:translateY(-1px);}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+    .link-row{display:flex;justify-content:space-between;align-items:center;margin-top:1.1rem;font-size:.78rem;}
+    .link-row a, .link-btn{color:var(--gray-mid);text-decoration:none;cursor:pointer;background:none;border:none;font-family:var(--font-body);font-size:.78rem;padding:0;}
+    .link-row a:hover, .link-btn:hover{color:var(--pink);}
+
+    .msg{
+      display:none;font-size:.82rem;padding:.7rem .9rem;border-radius:6px;margin-bottom:1.1rem;
+    }
+    .msg.show{display:block;}
+    .msg.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);}
+    .msg.success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+
+    .back-link{display:block;text-align:center;margin-top:1.4rem;font-size:.78rem;color:var(--gray);text-decoration:none;}
+    .back-link:hover{color:var(--pink);}
+
+    .divider{display:flex;align-items:center;gap:.8rem;margin:1.3rem 0;color:var(--gray);font-size:.72rem;text-transform:uppercase;letter-spacing:1px;}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  </style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="theme-toggle" onclick="alternarTema()" id="themeToggle">Modo claro</div>
+
+<div class="card">
+  <div class="logo-wrap">
+    <img src="../assets/img/logo tecnocel - Editado.png" alt="Tecnocel"/>
+  </div>
+
+  <div class="msg" id="msgBox"></div>
+
+  <!-- ══ VISTA: INICIAR SESIÓN ══ -->
+  <div class="view active" id="viewLogin">
+    <div class="title">PANEL DE INVENTARIO</div>
+    <div class="subtitle">Acceso para personal autorizado</div>
+    <form onsubmit="return manejarLogin(event)">
+      <div class="form-group"><label>Correo electrónico</label><input type="email" id="loginEmail" placeholder="tucorreo@ejemplo.com" required/></div>
+      <div class="form-group"><label>Contraseña</label><input type="password" id="loginPassword" placeholder="••••••••" required/></div>
+      <button type="submit" class="btn-primary" id="btnLogin">Iniciar sesión</button>
+    </form>
+    <div class="link-row">
+      <button class="link-btn" onclick="cambiarVista('viewForgot')">¿Olvidaste tu contraseña?</button>
+      <button class="link-btn" onclick="cambiarVista('viewRegister')">Crear cuenta</button>
+    </div>
+  </div>
+
+  <!-- ══ VISTA: CREAR CUENTA ══ -->
+  <div class="view" id="viewRegister">
+    <div class="title">CREAR CUENTA</div>
+    <div class="subtitle">Regístrate como personal del taller</div>
+    <form onsubmit="return manejarRegistro(event)">
+      <div class="form-group"><label>Nombre completo</label><input type="text" id="regNombre" placeholder="Tu nombre" required/></div>
+      <div class="form-group"><label>Correo electrónico</label><input type="email" id="regEmail" placeholder="tucorreo@ejemplo.com" required/></div>
+      <div class="form-group"><label>Contraseña</label><input type="password" id="regPassword" placeholder="Mínimo 8 caracteres" minlength="8" required/></div>
+      <div class="form-group"><label>Confirmar contraseña</label><input type="password" id="regPasswordConfirm" placeholder="Repite la contraseña" minlength="8" required/></div>
+      <button type="submit" class="btn-primary" id="btnRegister">Crear mi cuenta</button>
+    </form>
+    <div class="divider">o</div>
+    <button class="link-btn" style="display:block;width:100%;text-align:center;" onclick="cambiarVista('viewLogin')">Ya tengo cuenta, iniciar sesión</button>
+  </div>
+
+  <!-- ══ VISTA: RECUPERAR CONTRASEÑA ══ -->
+  <div class="view" id="viewForgot">
+    <div class="title">RECUPERAR ACCESO</div>
+    <div class="subtitle">Te mandaremos un enlace a tu correo</div>
+    <form onsubmit="return manejarRecuperacion(event)">
+      <div class="form-group"><label>Correo electrónico</label><input type="email" id="forgotEmail" placeholder="tucorreo@ejemplo.com" required/></div>
+      <button type="submit" class="btn-primary" id="btnForgot">Enviar enlace de recuperación</button>
+    </form>
+    <button class="link-btn" style="display:block;width:100%;text-align:center;margin-top:1.1rem;" onclick="cambiarVista('viewLogin')">← Volver a iniciar sesión</button>
+  </div>
+
+  <a class="back-link" href="../index.html">← Volver al sitio</a>
+</div>
+
+<script>
+  /* ── CONFIGURACIÓN — ajusta esto según dónde corra tu backend ─── */
+  const API_URL = 'http://localhost:3000';
+
+  /* ── Si ya hay una sesión activa, entra directo al panel sin pedir login de nuevo ── */
+  if(localStorage.getItem('tc_admin_auth')){
+    window.location.href = 'index.html';
+  }
+
+  /* ── TEMA CLARO / OSCURO (misma clave que el panel, para que quede sincronizado) ─── */
+  function alternarTema(){
+    const esClaro = document.body.classList.toggle('light');
+    localStorage.setItem('tc_theme', esClaro ? 'light' : 'dark');
+    document.getElementById('themeToggle').textContent = esClaro ? 'Modo oscuro' : 'Modo claro';
+  }
+  (function cargarTema(){
+    if(localStorage.getItem('tc_theme') === 'light'){
+      document.body.classList.add('light');
+      document.getElementById('themeToggle').textContent = 'Modo oscuro';
+    }
+  })();
+
+  /* ── NAVEGACIÓN ENTRE VISTAS ──────────────────────────────────── */
+  function cambiarVista(id){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    ocultarMensaje();
+  }
+  function mostrarMensaje(texto, tipo){
+    const box = document.getElementById('msgBox');
+    box.textContent = texto;
+    box.className = 'msg show ' + tipo;
+  }
+  function ocultarMensaje(){
+    document.getElementById('msgBox').className = 'msg';
+  }
+
+  /* ── LOGIN ────────────────────────────────────────────────────── */
+  async function manejarLogin(e){
+    e.preventDefault();
+    const btn = document.getElementById('btnLogin');
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    try{
+      const res = await fetch(API_URL + '/api/auth/login', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if(!data.success) throw new Error(data.message);
+      localStorage.setItem('tc_admin_auth', data.data.token);
+      localStorage.setItem('tc_admin_nombre', data.data.nombre);
+      localStorage.setItem('tc_admin_rol', data.data.rol);
+      localStorage.setItem('tc_admin_id', data.data.id);
+      window.location.href = 'index.html';
+    } catch(err){
+      mostrarMensaje(err.message || 'No se pudo conectar con el servidor.', 'error');
+      btn.disabled = false; btn.textContent = 'Iniciar sesión';
+    }
+    return false;
+  }
+
+  /* ── REGISTRO ─────────────────────────────────────────────────── */
+  async function manejarRegistro(e){
+    e.preventDefault();
+    const btn = document.getElementById('btnRegister');
+    const nombre = document.getElementById('regNombre').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const confirmar = document.getElementById('regPasswordConfirm').value;
+    if(password !== confirmar){ mostrarMensaje('Las contraseñas no coinciden.', 'error'); return false; }
+    btn.disabled = true; btn.textContent = 'Creando cuenta...';
+    try{
+      const res = await fetch(API_URL + '/api/auth/registro', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ nombre, email, password })
+      });
+      const data = await res.json();
+      if(!data.success) throw new Error(data.message);
+      mostrarMensaje(data.data.mensaje || 'Cuenta creada.', 'success');
+      setTimeout(()=>cambiarVista('viewLogin'), 2200);
+    } catch(err){
+      mostrarMensaje(err.message || 'No se pudo conectar con el servidor.', 'error');
+    }
+    btn.disabled = false; btn.textContent = 'Crear mi cuenta';
+    return false;
+  }
+
+  /* ── RECUPERACIÓN DE CONTRASEÑA ───────────────────────────────── */
+  async function manejarRecuperacion(e){
+    e.preventDefault();
+    const btn = document.getElementById('btnForgot');
+    const email = document.getElementById('forgotEmail').value.trim();
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    try{
+      const res = await fetch(API_URL + '/api/auth/recuperar', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      mostrarMensaje(data.message || 'Si el correo existe, se envió un enlace.', 'success');
+    } catch(err){
+      mostrarMensaje('No se pudo conectar con el servidor.', 'error');
+    }
+    btn.disabled = false; btn.textContent = 'Enviar enlace de recuperación';
+    return false;
+  }
+</script>
+</body>
+</html>

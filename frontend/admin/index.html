@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Tecnocel — Panel de Inventario</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root{--black:#080808;--dark:#111;--surface:#181818;--border:#2a2a2a;--gray:#888;--white:#f5f5f5;--pink:#e91e8c;--pink-dim:#9e1460;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--font-disp:'Bebas Neue',sans-serif;--font-body:'Outfit',sans-serif;}
+    body.light{--black:#f2f0eb;--dark:#ffffff;--surface:#f7f5f0;--border:#e0ddd4;--gray:#6b6a63;--white:#171614;--pink:#e91e8c;--pink-dim:#c7186f;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--black);color:var(--white);font-family:var(--font-body);min-height:100vh;transition:background .2s,color .2s;}
+
+    .theme-toggle{display:flex;align-items:center;gap:.6rem;padding:.65rem 1.5rem;font-size:.86rem;color:var(--gray);cursor:pointer;border-left:2px solid transparent;transition:background .15s,color .15s;}
+    .theme-toggle:hover{background:var(--surface);color:var(--white);}
+
+    .semaforo{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:.45rem;flex-shrink:0;}
+    .semaforo.rojo{background:var(--red);box-shadow:0 0 6px rgba(239,68,68,.6);}
+    .semaforo.amarillo{background:var(--yellow);box-shadow:0 0 6px rgba(245,158,11,.6);}
+    .semaforo.verde{background:var(--green);box-shadow:0 0 6px rgba(34,197,94,.5);}
+    .stock-cell{display:flex;align-items:center;}
+
+    /* LAYOUT */
+    .layout{display:flex;min-height:100vh;}
+    .sidebar{width:230px;background:var(--dark);border-right:1px solid var(--border);padding:1.5rem 0;display:flex;flex-direction:column;flex-shrink:0;}
+    .sidebar-brand{padding:0 1.5rem 1.2rem;border-bottom:1px solid var(--border);margin-bottom:1rem;}
+    .sidebar-brand .name{font-family:var(--font-disp);font-size:1.5rem;letter-spacing:2px;}
+    .sidebar-brand .name span{color:var(--pink);}
+    .sidebar-brand .sub{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);margin-top:.2rem;}
+    .nav-section-title{font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--gray);padding:0 1.5rem;margin:1rem 0 .5rem;}
+    .nav-item{display:flex;align-items:center;gap:.7rem;padding:.65rem 1.5rem;font-size:.86rem;color:var(--gray);cursor:pointer;border-left:2px solid transparent;transition:background .15s,color .15s;}
+    .nav-item:hover{background:var(--surface);color:var(--white);}
+    .nav-item.active{background:rgba(233,30,140,.08);color:var(--pink);border-left-color:var(--pink);}
+    .main{flex:1;padding:2rem;overflow-y:auto;max-width:100%;}
+
+    /* TOP BAR */
+    .top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.8rem;flex-wrap:wrap;gap:1rem;}
+    .page-title{font-family:var(--font-disp);font-size:1.9rem;letter-spacing:2px;}
+    .page-title span{color:var(--pink);}
+    .page-sub{font-size:.8rem;color:var(--gray);margin-top:.2rem;}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.15rem;border-radius:4px;font-size:.84rem;font-weight:600;border:none;cursor:pointer;transition:background .2s,transform .15s;font-family:var(--font-body);}
+    .btn:hover{transform:translateY(-1px);}
+    .btn-pink{background:var(--pink);color:#fff;}
+    .btn-pink:hover{background:var(--pink-dim);}
+    .btn-outline{background:transparent;color:var(--gray);border:1px solid var(--border);}
+    .btn-outline:hover{border-color:var(--pink);color:var(--pink);}
+    .btn-sm{padding:.4rem .75rem;font-size:.76rem;}
+    .btn-danger{background:rgba(239,68,68,.14);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+    .btn-danger:hover{background:rgba(239,68,68,.24);}
+    .btn-success{background:rgba(34,197,94,.14);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+    .btn-success:hover{background:rgba(34,197,94,.24);}
+
+    /* STATS */
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.6rem;}
+    .stat-card{background:var(--dark);border:1px solid var(--border);border-radius:8px;padding:1.1rem 1.3rem;border-left:3px solid var(--pink);}
+    .stat-card.green{border-left-color:var(--green);}
+    .stat-card.yellow{border-left-color:var(--yellow);}
+    .stat-card.red{border-left-color:var(--red);}
+    .sc-label{font-size:.64rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);margin-bottom:.35rem;}
+    .sc-value{font-family:var(--font-disp);font-size:1.9rem;letter-spacing:1px;line-height:1;}
+
+    /* ALERT */
+    .alert-banner{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.28);border-radius:6px;padding:.8rem 1.1rem;margin-bottom:1.3rem;display:flex;align-items:flex-start;gap:.6rem;font-size:.84rem;color:var(--red);}
+
+    /* TABS */
+    .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1.5rem;}
+    .tab-btn{padding:.7rem 1.3rem;font-size:.84rem;font-weight:500;background:none;border:none;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;font-family:var(--font-body);}
+    .tab-btn.active{color:var(--pink);border-bottom-color:var(--pink);}
+    .tab-pane{display:none;}
+    .tab-pane.active{display:block;}
+
+    /* TOOLBAR */
+    .toolbar{display:flex;align-items:center;gap:.8rem;margin-bottom:1.3rem;flex-wrap:wrap;}
+    .search-wrap{position:relative;flex:1;min-width:200px;}
+    .search-wrap input{width:100%;background:var(--dark);border:1px solid var(--border);color:var(--white);padding:.6rem 1rem .6rem 2.3rem;border-radius:4px;font-family:var(--font-body);font-size:.85rem;outline:none;}
+    .search-wrap input:focus{border-color:var(--pink);}
+    .search-wrap .ic{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:var(--gray);font-size:.9rem;}
+    .filter-select{background:var(--dark);border:1px solid var(--border);color:var(--white);padding:.6rem .9rem;border-radius:4px;font-size:.82rem;font-family:var(--font-body);cursor:pointer;}
+    .filter-select:focus{border-color:var(--pink);}
+
+    /* TABLE */
+    .table-wrap{background:var(--dark);border:1px solid var(--border);border-radius:8px;overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;min-width:640px;}
+    thead th{text-align:left;font-size:.64rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);padding:.8rem 1rem;font-weight:500;border-bottom:1px solid var(--border);}
+    tbody tr{border-bottom:1px solid rgba(42,42,42,.5);}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:var(--surface);}
+    tbody td{padding:.75rem 1rem;font-size:.85rem;color:var(--gray);}
+    tbody td.name{color:var(--white);font-weight:500;}
+    .badge{display:inline-block;font-size:.62rem;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:2px;}
+    .badge-pink{background:rgba(233,30,140,.14);color:var(--pink);border:1px solid rgba(233,30,140,.3);}
+    .badge-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+    .badge-yellow{background:rgba(245,158,11,.12);color:var(--yellow);border:1px solid rgba(245,158,11,.25);}
+    .badge-blue{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.25);}
+    .stock-num{font-family:var(--font-disp);font-size:1.2rem;letter-spacing:1px;}
+    .stock-num.low{color:var(--red);}
+    .stock-num.ok{color:var(--green);}
+    .stock-num.warn{color:var(--yellow);}
+    .actions{display:flex;gap:.35rem;flex-wrap:wrap;}
+    .empty{text-align:center;padding:2.5rem;color:var(--gray);font-size:.88rem;}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:var(--dark);border:1px solid var(--border);border-radius:10px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+    .modal-header{padding:1.3rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .modal-title{font-family:var(--font-disp);font-size:1.4rem;letter-spacing:1px;}
+    .modal-close{background:none;border:none;color:var(--gray);font-size:1.3rem;cursor:pointer;line-height:1;}
+    .modal-close:hover{color:var(--white);}
+    .modal-body{padding:1.4rem 1.5rem;}
+    .form-group{margin-bottom:1rem;}
+    .form-group label{display:block;font-size:.7rem;letter-spacing:1.2px;text-transform:uppercase;color:var(--gray);margin-bottom:.4rem;}
+    .form-group input,.form-group select,.form-group textarea{width:100%;background:var(--black);border:1px solid var(--border);color:var(--white);padding:.7rem .9rem;border-radius:4px;font-family:var(--font-body);font-size:.88rem;outline:none;}
+    .form-group input:focus,.form-group select:focus{border-color:var(--pink);}
+    .form-group select option{background:var(--dark);}
+    .form-row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+    .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;gap:.7rem;justify-content:flex-end;}
+    .qr-container{display:flex;flex-direction:column;align-items:center;gap:.9rem;padding:.5rem 0;}
+    #qrCanvas{background:#fff;padding:12px;border-radius:6px;}
+    .qr-info{text-align:center;font-size:.84rem;color:var(--gray);}
+    .qr-info strong{color:var(--white);display:block;margin-bottom:.25rem;}
+
+    /* MOVIMIENTOS LIST */
+    .mov-item{display:flex;align-items:center;gap:.9rem;padding:.85rem 1rem;border-bottom:1px solid rgba(42,42,42,.5);}
+    .mov-item:last-child{border-bottom:none;}
+    .mov-icon{font-size:1.1rem;width:34px;height:34px;background:var(--surface);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .mov-detail{flex:1;min-width:0;}
+    .mov-name{font-size:.85rem;color:var(--white);font-weight:500;}
+    .mov-time{font-size:.72rem;color:var(--gray);margin-top:.1rem;}
+    .mov-qty{font-family:var(--font-disp);font-size:1.15rem;flex-shrink:0;}
+    .mov-qty.minus{color:var(--red);}
+    .mov-qty.plus{color:var(--green);}
+
+    /* NOTA TECNICA */
+    .tech-note{background:var(--dark);border:1px dashed var(--border);border-radius:6px;padding:1rem 1.2rem;font-size:.78rem;color:var(--gray);line-height:1.6;margin-bottom:1.5rem;}
+    .tech-note strong{color:var(--pink);}
+
+    @media(max-width:768px){.sidebar{display:none}.stats-row{grid-template-columns:1fr 1fr}.form-row2{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<script>
+  if(!localStorage.getItem('tc_admin_auth')){
+    window.location.href = 'login.html';
+  }
+</script>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="name">tecn<span>o</span>cel</div>
+      <div class="sub">Panel de Inventario</div>
+      <div class="sub" id="nombreTrabajador" style="color:var(--pink);margin-top:.3rem;"></div>
+    </div>
+    <div class="nav-section-title">Gestión</div>
+    <div class="nav-item" onclick="window.location.href='../scanner/index.html'" style="color:var(--pink);font-weight:600;">Escanear pantalla</div>
+    <div class="nav-item active" onclick="showPane('inv')">Inventario de pantallas</div>
+    <div class="nav-item" onclick="showPane('mov')">Movimientos</div>
+    <div class="nav-item" onclick="showPane('ord')">Órdenes de servicio</div>
+    <div class="nav-section-title" id="seccionAdminTitulo" style="display:none;">Administración</div>
+    <div class="nav-item" id="navAdminUsuarios" onclick="showPane('admin')" style="display:none;">Trabajadores y accesos</div>
+    <div class="nav-section-title">Herramientas</div>
+    <div class="nav-item" onclick="exportarInventarioCSV()">Exportar inventario (CSV)</div>
+    <div class="nav-item" onclick="exportarMovimientosCSV()">Exportar movimientos (CSV)</div>
+    <div class="nav-item" onclick="descargarAnalisisIA()">Descargar análisis de IA (Excel)</div>
+    <div class="nav-item" onclick="window.open('../index.html','_blank')">Ver sitio web</div>
+    <div class="theme-toggle" onclick="alternarTema()" id="themeToggle">Modo claro</div>
+    <div class="nav-item" onclick="cerrarSesion()" style="color:#ef4444;">Cerrar sesión</div>
+  </aside>
+
+  <main class="main">
+    <div class="top-bar">
+      <div>
+        <div class="page-title">INVENTARIO <span>DISPLAYS</span></div>
+        <div class="page-sub">Control de existencias y movimientos de pantallas</div>
+      </div>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="window.location.href='../scanner/index.html'">Escanear pantalla</button>
+        <button class="btn btn-pink" onclick="abrirModalNuevo()">+ Agregar pantalla</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="sc-label">Total referencias</div><div class="sc-value" id="statTotal">0</div></div>
+      <div class="stat-card green"><div class="sc-label">En stock</div><div class="sc-value" id="statStock">0</div></div>
+      <div class="stat-card yellow"><div class="sc-label">Stock bajo</div><div class="sc-value" id="statLow">0</div></div>
+      <div class="stat-card red"><div class="sc-label">Sin stock</div><div class="sc-value" id="statEmpty">0</div></div>
+      <div class="stat-card"><div class="sc-label">Valor total inventario</div><div class="sc-value" id="statValor">$0</div></div>
+    </div>
+
+    <div class="alert-banner" id="alertBanner" style="display:none">
+      <span id="alertText"></span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabInv" onclick="showPane('inv')">Inventario</button>
+      <button class="tab-btn" id="tabMov" onclick="showPane('mov')">Movimientos recientes</button>
+      <button class="tab-btn" id="tabOrd" onclick="showPane('ord')">Órdenes de servicio</button>
+    </div>
+
+    <div class="tab-pane active" id="paneInv">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="ic">🔍</span>
+          <input type="text" id="searchInput" placeholder="Buscar por modelo o marca..." oninput="renderTabla()"/>
+        </div>
+        <select class="filter-select" id="filterMarca" onchange="renderTabla()">
+          <option value="">Todas las marcas</option>
+          <option value="SM">Samsung</option>
+          <option value="MT">Motorola</option>
+          <option value="XM">Xiaomi</option>
+          <option value="HW">Huawei/Honor</option>
+          <option value="OPPO">OPPO</option>
+          <option value="IP">iPhone</option>
+        </select>
+        <select class="filter-select" id="filterCalidad" onchange="renderTabla()">
+          <option value="">Todas las calidades</option>
+          <option>ORIGINAL</option>
+          <option>INCELL</option>
+          <option>OLED</option>
+          <option>HD INCELL</option>
+        </select>
+        <select class="filter-select" id="filterStock" onchange="renderTabla()">
+          <option value="">Todo el stock</option>
+          <option value="low">Stock bajo</option>
+          <option value="empty">Sin stock</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Marca</th><th>Calidad</th><th>Modelo</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr></thead>
+          <tbody id="tablaBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="paneMov">
+      <div class="table-wrap" id="movList"></div>
+    </div>
+
+    <div class="tab-pane" id="paneOrd">
+      <div class="toolbar">
+        <select class="filter-select" id="filtroMesOrdenes" onchange="renderOrdenesFiltradas()"></select>
+        <span style="font-size:.78rem;color:var(--gray);">Por defecto solo se muestra el mes actual — cambia el filtro para ver meses anteriores.</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Equipo</th><th>Problema</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+          <tbody id="ordenesBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="paneAdmin">
+      <div class="tech-note" style="margin-bottom:1.3rem;">
+        Solo tú, como administrador, puedes ver esta sección. Aprueba o deniega el acceso de cada trabajador que se registre en el panel.
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Registrado</th><th>Acciones</th></tr></thead>
+          <tbody id="usuariosBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL AGREGAR/EDITAR -->
+<div class="modal-overlay" id="modalForm">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalFormTitle">AGREGAR PANTALLA</div>
+      <button class="modal-close" onclick="cerrarModal('modalForm')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId"/>
+      <div class="form-row2">
+        <div class="form-group">
+          <label>Marca</label>
+          <select id="fMarca">
+            <option value="SM">Samsung (SM)</option>
+            <option value="MT">Motorola (MT)</option>
+            <option value="XM">Xiaomi (XM)</option>
+            <option value="HW">Huawei/Honor (HW)</option>
+            <option value="OPPO">OPPO</option>
+            <option value="IP">iPhone (IP)</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Calidad</label>
+          <select id="fCalidad">
+            <option>ORIGINAL</option>
+            <option>INCELL</option>
+            <option>OLED</option>
+            <option>HD INCELL</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Modelo(s)</label>
+        <input type="text" id="fModelo" placeholder="Ej: A15 INCELL CON MARCO / A16"/>
+      </div>
+      <div class="form-row2">
+        <div class="form-group">
+          <label>Precio (MXN)</label>
+          <input type="number" id="fPrecio" placeholder="280"/>
+        </div>
+        <div class="form-group">
+          <label>Cantidad en stock</label>
+          <input type="number" id="fStock" placeholder="0" min="0"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Stock mínimo (alerta)</label>
+        <input type="number" id="fMinStock" placeholder="3" min="1" value="3"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="cerrarModal('modalForm')">Cancelar</button>
+      <button class="btn btn-pink" onclick="guardarPieza()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL QR -->
+<div class="modal-overlay" id="modalQR">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-header">
+      <div class="modal-title">QR ETIQUETA</div>
+      <button class="modal-close" onclick="cerrarModal('modalQR')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-container">
+        <div id="qrCanvas"></div>
+        <div class="qr-info">
+          <strong id="qrNombre"></strong>
+          <span id="qrPrecio"></span>
+        </div>
+        <div style="display:flex;gap:.7rem;margin-top:.4rem;">
+          <button class="btn btn-pink btn-sm" onclick="imprimirQR()">Imprimir etiqueta</button>
+          <button class="btn btn-outline btn-sm" onclick="cerrarModal('modalQR')">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJUSTE STOCK -->
+<div class="modal-overlay" id="modalStock">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <div class="modal-title" id="modalStockTitle">AJUSTAR STOCK</div>
+      <button class="modal-close" onclick="cerrarModal('modalStock')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.86rem;color:var(--gray);margin-bottom:1rem;" id="modalStockSub"></p>
+      <div class="form-group">
+        <label>Cantidad</label>
+        <input type="number" id="stockAjuste" value="1" min="1"/>
+      </div>
+      <div class="form-group">
+        <label>Motivo</label>
+        <select id="stockMotivo">
+          <option value="reparacion">Usada en reparación</option>
+          <option value="reabastecimiento">Reabastecimiento / compra</option>
+          <option value="ajuste">Ajuste de conteo</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="cerrarModal('modalStock')">Cancelar</button>
+      <button class="btn btn-pink" onclick="confirmarAjuste()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   MODELO DE DATOS — diseñado para migrar 1:1 a Google Sheets
+   Hoja "Inventario": id | marca | calidad | modelo | precio | stock | stock_minimo | fecha_alta
+   Hoja "Movimientos": id_movimiento | id_pieza | marca | modelo | tipo | cantidad | stock_resultante | fecha | motivo
+   ════════════════════════════════════════════════════════════════ */
+
+const INVENTARIO_INICIAL = [
+  {marca:'SM',calidad:'INCELL',modelo:'A15 INCELL CON MARCO',precio:280,stock:0,minStock:3},
+  {marca:'SM',calidad:'INCELL',modelo:'A16 INCELL',precio:235,stock:3,minStock:3},
+  {marca:'SM',calidad:'INCELL',modelo:'A30S INCELL VIDRIO GRANDE CON MARCO',precio:220,stock:0,minStock:3},
+  {marca:'SM',calidad:'INCELL',modelo:'A51 INCELL VIDRIO GRANDE CON MARCO',precio:250,stock:0,minStock:3},
+  {marca:'SM',calidad:'INCELL',modelo:'A32 4G CON MARCO',precio:260,stock:0,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A02S/A03S/A03/A035/A04E',precio:180,stock:2,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A03 CORE / A032',precio:180,stock:0,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A13 5G / A04S',precio:180,stock:0,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A12 FLEX A127F',precio:200,stock:1,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A12 FLEX M127F / M12',precio:200,stock:0,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A04',precio:170,stock:0,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A05 / A055M',precio:180,stock:0,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A05S',precio:215,stock:0,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A06 4G',precio:180,stock:1,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A14 / A145 4G',precio:190,stock:0,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A146p 5G CONECTOR PEQUEÑO',precio:200,stock:0,minStock:3},
+  {marca:'SM',calidad:'ORIGINAL',modelo:'A146B 5G CONECTOR GRANDE',precio:200,stock:0,minStock:3},
+  {marca:'SM',calidad:'INCELL',modelo:'A24 INCELL CON MARCO VIDRIO GRANDE',precio:280,stock:1,minStock:3},
+  {marca:'SM',calidad:'INCELL',modelo:'A34 INCELL VIDRIO GRANDE CON MARCO',precio:350,stock:2,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'E14/G24/G04/G04S/G24 POWER',precio:180,stock:0,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'E22 / E22I',precio:180,stock:1,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'E7/E7 POWER/E7I/E7I POWER',precio:180,stock:2,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'EDGE 50 FUSION/G85/S50 NEO',precio:700,stock:2,minStock:2},
+  {marca:'MT',calidad:'INCELL',modelo:'G10/G20/G30/G10 POWER',precio:182,stock:0,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'G13/G23/G34/G53/G45',precio:182,stock:2,minStock:3},
+  {marca:'MT',calidad:'INCELL',modelo:'G14/G54/G55/G64 INCELL',precio:190,stock:1,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'G22/E32/E32S',precio:200,stock:4,minStock:3},
+  {marca:'MT',calidad:'OLED',modelo:'G31/G41/G71 OLED',precio:180,stock:5,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'G35 ORIGINAL',precio:540,stock:0,minStock:2},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'G50 4G',precio:260,stock:0,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'G50 5G',precio:200,stock:1,minStock:3},
+  {marca:'MT',calidad:'INCELL',modelo:'G52/G72/EDGE 30/G82/G71S INCELL',precio:245,stock:0,minStock:3},
+  {marca:'MT',calidad:'INCELL',modelo:'G60S/G60/G40/G51/G51 5G/G40 Fusion INCELL',precio:210,stock:1,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'G60S/G60/G40/G51/G51 5G/G40 Fusion ORIGINAL',precio:300,stock:2,minStock:3},
+  {marca:'MT',calidad:'INCELL',modelo:'G8 PLAY / ONE MARCO',precio:180,stock:0,minStock:3},
+  {marca:'MT',calidad:'ORIGINAL',modelo:'G9 PLAY / E7 PLUS',precio:180,stock:0,minStock:3},
+  {marca:'XM',calidad:'INCELL',modelo:'POCO M3/REDMI 9T/RM 9 POWER COPIA',precio:190,stock:0,minStock:3},
+  {marca:'XM',calidad:'ORIGINAL',modelo:'REDMI 13C / POCO C65',precio:190,stock:4,minStock:3},
+  {marca:'XM',calidad:'INCELL',modelo:'REDMI NOTE 10 4G/NOTE 10S/M5S COPIA',precio:180,stock:1,minStock:3},
+  {marca:'XM',calidad:'INCELL',modelo:'REDMI NOTE 11 4G/11S/12S/M4 PRO 4G COPIA',precio:220,stock:4,minStock:3},
+  {marca:'XM',calidad:'INCELL',modelo:'REDMI NOTE 12 4G 5G/POCO X5 5G COPIA',precio:230,stock:1,minStock:3},
+  {marca:'HW',calidad:'ORIGINAL',modelo:'HONOR X6/X6 2022/X6S/X8 5G/HR 70 LITE/X8A 5G',precio:190,stock:5,minStock:3},
+  {marca:'HW',calidad:'ORIGINAL',modelo:'HONOR X7A / CW40 PLUS',precio:190,stock:0,minStock:3},
+  {marca:'HW',calidad:'INCELL',modelo:'HONOR X8A 4G / HONOR 90 LITE',precio:210,stock:4,minStock:3},
+  {marca:'HW',calidad:'ORIGINAL',modelo:'P30 LITE / NOVE4E',precio:260,stock:1,minStock:3},
+  {marca:'HW',calidad:'ORIGINAL',modelo:'X6A/X6A PLUS/X5 PLUS/X5B/X5B PLUS',precio:190,stock:0,minStock:3},
+  {marca:'HW',calidad:'INCELL',modelo:'X7B INCELL',precio:230,stock:0,minStock:3},
+  {marca:'HW',calidad:'ORIGINAL',modelo:'Y9 2019 / Y8S',precio:260,stock:2,minStock:3},
+  {marca:'HW',calidad:'ORIGINAL',modelo:'Y9 PRIME/Y9 PRIME 2019/P SMART Z',precio:260,stock:0,minStock:3},
+  {marca:'HW',calidad:'ORIGINAL',modelo:'Y9S / HONOR 9X',precio:260,stock:0,minStock:3},
+  {marca:'OPPO',calidad:'ORIGINAL',modelo:'A15/RL C15/C11/C12/RL V3 5G/A16K/NARZO 20/Q2I 5G/NARZO 30A/A15S/A35/A16E',precio:180,stock:0,minStock:3},
+  {marca:'OPPO',calidad:'ORIGINAL',modelo:'A17/A17K/A57/A57S/A77/A78 5G/A58 5G/K10 5G/OPA1X 5G/ONE PLUS NORD N20 SE/A18/A56S/A59 5G',precio:180,stock:1,minStock:3},
+  {marca:'OPPO',calidad:'INCELL',modelo:'RENO 7 4G-5G/A78 4G/RENO 8 5G/RL 9 PRO PLUS/F21 PRO/F21S PRO 5G/NORD CE2 5G',precio:240,stock:0,minStock:3},
+  {marca:'IP',calidad:'HD INCELL',modelo:'XR',precio:250,stock:0,minStock:3},
+  {marca:'IP',calidad:'HD INCELL',modelo:'XS',precio:250,stock:2,minStock:3},
+  {marca:'IP',calidad:'ORIGINAL',modelo:'11 (IC CAMBIO)',precio:280,stock:0,minStock:3},
+];
+
+/* ── CONEXIÓN AL BACKEND ──────────────────────────────────────────*/
+const API_URL = 'http://localhost:3000'; // cambia esto por la URL de Railway cuando despliegues
+
+/* ── SEGURIDAD: escapa cualquier texto antes de insertarlo en la página.
+   Los datos de clientes (nombre, problema, modelo) llegan vía el bot de
+   WhatsApp sin ningún control — sin esto, alguien podría escribir código
+   en vez de una descripción normal y que se ejecute dentro de tu panel. ──*/
+function escapeHTML(texto){
+  if(texto === null || texto === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = String(texto);
+  return div.innerHTML;
+}
+
+function headersAuth(conJSON = true) {
+  const token = localStorage.getItem('tc_admin_auth');
+  const headers = { 'Authorization': 'Bearer ' + token };
+  if (conJSON) headers['Content-Type'] = 'application/json';
+  return headers;
+}
+
+async function peticion(metodo, ruta, body) {
+  const res = await fetch(API_URL + ruta, {
+    method: metodo,
+    headers: headersAuth(),
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) {
+    localStorage.removeItem('tc_admin_auth');
+    window.location.href = 'login.html';
+    return null;
+  }
+  const data = await res.json();
+  if (!data.success) throw new Error(data.message || 'Ocurrió un error.');
+  return data.data;
+}
+
+/* ── NORMALIZACIÓN — Sheets usa snake_case, el panel usa camelCase ─*/
+function normalizarPieza(p) {
+  return {
+    id: p.id,
+    marca: p.marca,
+    calidad: p.calidad,
+    modelo: p.modelo,
+    precio: Number(p.precio) || 0,
+    stock: Number(p.stock) || 0,
+    minStock: Number(p.stock_minimo) || 3,
+    fechaAlta: p.fecha_alta,
+  };
+}
+function normalizarMovimiento(m) {
+  return {
+    idMovimiento: m.id_movimiento,
+    idPieza: m.id_pieza,
+    marca: m.marca,
+    modelo: m.modelo,
+    tipo: m.tipo,
+    cantidad: Number(m.cantidad) || 0,
+    stockResultante: Number(m.stock_resultante) || 0,
+    fecha: m.fecha,
+    motivo: m.motivo,
+  };
+}
+
+async function cargarInventario() {
+  try {
+    const datos = await peticion('GET', '/api/inventario') || [];
+    return datos.map(normalizarPieza);
+  } catch (e) { alert('No se pudo cargar el inventario: ' + e.message); return []; }
+}
+async function cargarMovimientos() {
+  try {
+    const datos = await peticion('GET', '/api/inventario/movimientos/recientes') || [];
+    return datos.map(normalizarMovimiento);
+  } catch (e) { return []; }
+}
+
+let inventario = [];
+let movimientos = [];
+let ajusteTarget = null, ajusteTipo = null;
+
+async function cargarDatosIniciales() {
+  inventario = await cargarInventario();
+  movimientos = await cargarMovimientos();
+  renderTabla();
+  actualizarStats();
+  renderMovimientos();
+}
+
+
+/* ── STATS ──────────────────────────────────────────────────────*/
+function actualizarStats(){
+  const total = inventario.length;
+  const enStock = inventario.filter(i=>i.stock>0).length;
+  const stockBajo = inventario.filter(i=>i.stock>0 && i.stock<=i.minStock).length;
+  const sinStock = inventario.filter(i=>i.stock===0).length;
+  const valorTotal = inventario.reduce((acc,i)=>acc+(i.precio*i.stock),0);
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statStock').textContent = enStock;
+  document.getElementById('statLow').textContent = stockBajo;
+  document.getElementById('statEmpty').textContent = sinStock;
+  document.getElementById('statValor').textContent = '$'+valorTotal.toLocaleString('es-MX');
+  const alertas = inventario.filter(i=>i.stock<=i.minStock && i.stock>0);
+  const banner = document.getElementById('alertBanner');
+  if(alertas.length>0){
+    banner.style.display='flex';
+    document.getElementById('alertText').textContent = alertas.length+' referencia(s) con stock bajo: '+alertas.map(a=>a.modelo.split('/')[0]).join(', ');
+  } else { banner.style.display='none'; }
+}
+
+/* ── SEMÁFORO DE STOCK ────────────────────────────────────────────
+   rojo: 0-2 piezas · amarillo: 3-4 piezas · verde: 5 o más (tu máximo ideal) */
+function colorSemaforo(stock){
+  if(stock<3) return 'rojo';
+  if(stock<5) return 'amarillo';
+  return 'verde';
+}
+
+/* ── TABLA ──────────────────────────────────────────────────────*/
+const CALIDAD_COLORS = {ORIGINAL:'badge-green',INCELL:'badge-pink',OLED:'badge-yellow','HD INCELL':'badge-blue'};
+
+function renderTabla(){
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const fMarca = document.getElementById('filterMarca').value;
+  const fCal = document.getElementById('filterCalidad').value;
+  const fStock = document.getElementById('filterStock').value;
+  let data = [...inventario];
+  if(q) data = data.filter(i=>(i.modelo+i.marca+i.calidad).toLowerCase().includes(q));
+  if(fMarca) data = data.filter(i=>i.marca===fMarca);
+  if(fCal) data = data.filter(i=>i.calidad===fCal);
+  if(fStock==='low') data = data.filter(i=>i.stock>0&&i.stock<=i.minStock);
+  if(fStock==='empty') data = data.filter(i=>i.stock===0);
+  const tbody = document.getElementById('tablaBody');
+  if(data.length===0){ tbody.innerHTML='<tr><td colspan="6"><div class="empty">No se encontraron resultados</div></td></tr>'; return; }
+  tbody.innerHTML = data.map(item=>{
+    const sClass = item.stock===0?'low':item.stock<=item.minStock?'warn':'ok';
+    const calClass = CALIDAD_COLORS[item.calidad]||'badge-pink';
+    return `<tr>
+      <td><span class="badge badge-pink">${escapeHTML(item.marca)}</span></td>
+      <td><span class="badge ${calClass}">${escapeHTML(item.calidad)}</span></td>
+      <td class="name">${escapeHTML(item.modelo)}</td>
+      <td>$${item.precio}</td>
+      <td><div class="stock-cell"><span class="semaforo ${colorSemaforo(item.stock)}"></span><span class="stock-num ${sClass}">${item.stock}</span></div></td>
+      <td><div class="actions">
+        <button class="btn btn-success btn-sm" onclick="abrirAjuste('${item.id}','add')" title="Agregar stock">+</button>
+        <button class="btn btn-danger btn-sm" onclick="abrirAjuste('${item.id}','sub')" title="Usar pantalla">−</button>
+        <button class="btn btn-outline btn-sm" onclick="verQR('${item.id}')" title="Ver QR">QR</button>
+        <button class="btn btn-outline btn-sm" onclick="editarPieza('${item.id}')" title="Editar">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarPieza('${item.id}')" title="Eliminar">Eliminar</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── MODALES CRUD ───────────────────────────────────────────────*/
+function abrirModal(id){ document.getElementById(id).classList.add('open'); }
+function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
+function abrirModalNuevo(){
+  document.getElementById('modalFormTitle').textContent='AGREGAR PANTALLA';
+  document.getElementById('editId').value='';
+  document.getElementById('fMarca').value='SM';
+  document.getElementById('fCalidad').value='ORIGINAL';
+  document.getElementById('fModelo').value='';
+  document.getElementById('fPrecio').value='';
+  document.getElementById('fStock').value='0';
+  document.getElementById('fMinStock').value='3';
+  abrirModal('modalForm');
+}
+function editarPieza(id){
+  const item = inventario.find(i=>i.id===id); if(!item) return;
+  document.getElementById('modalFormTitle').textContent='EDITAR PANTALLA';
+  document.getElementById('editId').value=id;
+  document.getElementById('fMarca').value=item.marca;
+  document.getElementById('fCalidad').value=item.calidad;
+  document.getElementById('fModelo').value=item.modelo;
+  document.getElementById('fPrecio').value=item.precio;
+  document.getElementById('fStock').value=item.stock;
+  document.getElementById('fMinStock').value=item.minStock;
+  abrirModal('modalForm');
+}
+async function guardarPieza(){
+  const id = document.getElementById('editId').value;
+  const pieza = {
+    marca: document.getElementById('fMarca').value,
+    calidad: document.getElementById('fCalidad').value,
+    modelo: document.getElementById('fModelo').value.trim(),
+    precio: Number(document.getElementById('fPrecio').value),
+    stock: Number(document.getElementById('fStock').value),
+    stock_minimo: Number(document.getElementById('fMinStock').value)||3,
+  };
+  if(!pieza.modelo||!pieza.precio){ alert('Completa modelo y precio.'); return; }
+
+  const btn = document.querySelector('#modalForm .btn-pink');
+  if(btn){ btn.disabled = true; btn.textContent = 'Guardando...'; }
+  try {
+    if(id){
+      await peticion('PATCH', '/api/inventario/'+id, pieza);
+    } else {
+      await peticion('POST', '/api/inventario', pieza);
+    }
+    cerrarModal('modalForm');
+    await cargarDatosIniciales();
+  } catch(e){
+    alert('No se pudo guardar: ' + e.message);
+  }
+  if(btn){ btn.disabled = false; btn.textContent = 'Guardar'; }
+}
+async function eliminarPieza(id){
+  if(!confirm('¿Eliminar esta pantalla del inventario?')) return;
+  try {
+    await peticion('DELETE', '/api/inventario/'+id);
+    await cargarDatosIniciales();
+  } catch(e){
+    alert('No se pudo eliminar: ' + e.message);
+  }
+}
+
+/* ── AJUSTE DE STOCK (genera el registro de Movimientos) ─────────*/
+function abrirAjuste(id, tipo){
+  const item = inventario.find(i=>i.id===id); if(!item) return;
+  ajusteTarget=id; ajusteTipo=tipo;
+  document.getElementById('modalStockTitle').textContent = tipo==='add'?'AGREGAR STOCK':'USAR PANTALLA';
+  document.getElementById('modalStockSub').textContent = (tipo==='add'?'Agregar al inventario: ':'Usar del inventario: ')+item.modelo;
+  document.getElementById('stockAjuste').value=1;
+  document.getElementById('stockMotivo').value = tipo==='add'?'reabastecimiento':'reparacion';
+  abrirModal('modalStock');
+}
+async function confirmarAjuste(){
+  const item = inventario.find(i=>i.id===ajusteTarget); if(!item) return;
+  const qty = Number(document.getElementById('stockAjuste').value)||1;
+  const motivo = document.getElementById('stockMotivo').value;
+  const cantidadReal = ajusteTipo==='sub' ? -qty : qty;
+
+  try {
+    const resultado = await peticion('POST', '/api/inventario/'+ajusteTarget+'/ajustar', { cantidad: cantidadReal, motivo });
+    cerrarModal('modalStock');
+    await cargarDatosIniciales();
+    if(ajusteTipo==='sub' && resultado.stock <= item.minStock && resultado.stock > 0){
+      setTimeout(()=>alert('Stock bajo en: '+resultado.modelo+' (quedan '+resultado.stock+' piezas)'),150);
+    }
+  } catch(e){
+    alert('No se pudo ajustar el stock: ' + e.message);
+  }
+}
+
+/* ── QR ─────────────────────────────────────────────────────────*/
+function verQR(id){
+  const item = inventario.find(i=>i.id===id); if(!item) return;
+  document.getElementById('qrCanvas').innerHTML='';
+  new QRCode(document.getElementById('qrCanvas'),{
+    text: JSON.stringify({id:item.id,m:item.modelo,c:item.calidad,p:item.precio}),
+    width:200, height:200, colorDark:'#000000', colorLight:'#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+  document.getElementById('qrNombre').textContent=item.marca+' — '+item.modelo;
+  document.getElementById('qrPrecio').textContent='Calidad: '+item.calidad+' · $'+item.precio+' MXN';
+  abrirModal('modalQR');
+}
+function imprimirQR(){
+  const canvas=document.querySelector('#qrCanvas canvas')||document.querySelector('#qrCanvas img');
+  if(!canvas){alert('Genera el QR primero.');return;}
+  const src=canvas.tagName==='CANVAS'?canvas.toDataURL():canvas.src;
+  const nombre=document.getElementById('qrNombre').textContent;
+  const precio=document.getElementById('qrPrecio').textContent;
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>Etiqueta Tecnocel</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:20px;}img{width:180px;height:180px;}p{font-size:11px;margin:4px 0;}</style></head><body>');
+  w.document.write('<img src="'+src+'"/><br>');
+  w.document.write('<p style="font-size:13px;font-weight:bold;">'+nombre+'</p>');
+  w.document.write('<p>'+precio+'</p>');
+  w.document.write('<p style="font-size:9px;color:#888;">Tecnocel Laboratorio Celular</p>');
+  w.document.close();
+  w.onload = function(){ w.focus(); w.print(); };
+}
+
+/* ── MOVIMIENTOS ────────────────────────────────────────────────*/
+const MOTIVO_LABELS = {reparacion:'Reparación', reabastecimiento:'Reabastecimiento', ajuste:'Ajuste'};
+function renderMovimientos(){
+  const list=document.getElementById('movList');
+  if(movimientos.length===0){list.innerHTML='<div class="empty">Aún no hay movimientos registrados</div>';return;}
+  list.innerHTML=movimientos.slice(0,80).map(m=>{
+    const fecha = new Date(m.fecha).toLocaleString('es-MX');
+    const motivo = MOTIVO_LABELS[m.motivo]||'';
+    return `<div class="mov-item">
+      <div class="mov-icon">${m.cantidad<0?'-':'+'}</div>
+      <div class="mov-detail">
+        <div class="mov-name">${escapeHTML(m.marca)} — ${escapeHTML(m.modelo)}</div>
+        <div class="mov-time">${fecha}${motivo?' · '+motivo:''} · Stock resultante: ${m.stockResultante}</div>
+      </div>
+      <div class="mov-qty ${m.cantidad<0?'minus':'plus'}">${m.cantidad>0?'+':''}${m.cantidad}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── TABS ───────────────────────────────────────────────────────*/
+function showPane(p){
+  document.getElementById('paneInv').classList.toggle('active',p==='inv');
+  document.getElementById('paneMov').classList.toggle('active',p==='mov');
+  document.getElementById('paneOrd').classList.toggle('active',p==='ord');
+  document.getElementById('paneAdmin').classList.toggle('active',p==='admin');
+  document.getElementById('tabInv').classList.toggle('active',p==='inv');
+  document.getElementById('tabMov').classList.toggle('active',p==='mov');
+  document.getElementById('tabOrd').classList.toggle('active',p==='ord');
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  if(p==='mov') renderMovimientos();
+  if(p==='ord') cargarYRenderOrdenes();
+  if(p==='admin') cargarYRenderUsuarios();
+}
+
+/* ── ADMINISTRACIÓN — solo visible y usable por el rol "admin" ────*/
+const ETIQUETAS_ESTADO_USUARIO = {
+  pendiente: {texto:'Pendiente', clase:'badge-yellow'},
+  aprobado: {texto:'Aprobado', clase:'badge-green'},
+  denegado: {texto:'Denegado', clase:'badge-pink'},
+};
+
+function mostrarSeccionAdminSiAplica(){
+  if(localStorage.getItem('tc_admin_rol') === 'admin'){
+    document.getElementById('seccionAdminTitulo').style.display = '';
+    document.getElementById('navAdminUsuarios').style.display = '';
+  }
+}
+
+async function cargarYRenderUsuarios(){
+  const tbody = document.getElementById('usuariosBody');
+  tbody.innerHTML = '<tr><td colspan="6"><div class="empty">Cargando...</div></td></tr>';
+  try {
+    const usuarios = await peticion('GET', '/api/auth/usuarios') || [];
+    if(usuarios.length === 0){
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No hay trabajadores registrados todavía</div></td></tr>';
+      return;
+    }
+    const miId = obtenerMiIdDeSesion();
+    tbody.innerHTML = usuarios.map(u => {
+      const estadoInfo = ETIQUETAS_ESTADO_USUARIO[u.estado] || {texto:u.estado, clase:'badge-pink'};
+      const esUnoMismo = u.id === miId;
+      let acciones = '';
+      if(!esUnoMismo){
+        if(u.estado !== 'aprobado') acciones += `<button class="btn btn-success btn-sm" onclick="cambiarEstadoUsuario('${u.id}','aprobado')">Aprobar</button> `;
+        if(u.estado !== 'denegado') acciones += `<button class="btn btn-danger btn-sm" onclick="cambiarEstadoUsuario('${u.id}','denegado')">Denegar</button>`;
+      } else {
+        acciones = '<span style="color:var(--gray);font-size:.78rem;">Tu cuenta</span>';
+      }
+      return `<tr>
+        <td class="name">${escapeHTML(u.nombre)}</td>
+        <td>${escapeHTML(u.email)}</td>
+        <td><span class="badge badge-blue">${escapeHTML(u.rol)}</span></td>
+        <td><span class="badge ${estadoInfo.clase}">${estadoInfo.texto}</span></td>
+        <td>${u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString('es-MX') : ''}</td>
+        <td><div class="actions">${acciones}</div></td>
+      </tr>`;
+    }).join('');
+  } catch(e){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty">No se pudo cargar: ${e.message}</div></td></tr>`;
+  }
+}
+
+function obtenerMiIdDeSesion(){
+  return localStorage.getItem('tc_admin_id');
+}
+
+async function cambiarEstadoUsuario(idUsuario, nuevoEstado){
+  const texto = nuevoEstado === 'aprobado' ? '¿Aprobar el acceso de este trabajador?' : '¿Denegar el acceso de este trabajador?';
+  if(!confirm(texto)) return;
+  try {
+    await peticion('PATCH', '/api/auth/usuarios/'+idUsuario+'/estado', { estado: nuevoEstado });
+    await cargarYRenderUsuarios();
+  } catch(e){
+    alert('No se pudo actualizar: ' + e.message);
+  }
+}
+
+/* ── ÓRDENES DE SERVICIO ──────────────────────────────────────────*/
+const ETIQUETAS_ESTADO_ORDEN = {
+  pendiente: {texto:'Pendiente', clase:'badge-yellow'},
+  en_reparacion: {texto:'En reparación', clase:'badge-blue'},
+  listo: {texto:'Listo', clase:'badge-green'},
+  entregado: {texto:'Entregado', clase:'badge-pink'},
+};
+const SIGUIENTE_ESTADO = { pendiente:'en_reparacion', en_reparacion:'listo', listo:'entregado' };
+const TEXTO_BOTON_SIGUIENTE = { pendiente:'Marcar en reparación', en_reparacion:'Marcar como listo', listo:'Marcar como entregado' };
+const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+let todasLasOrdenes = [];
+
+function claveMes(fechaIso){
+  if(!fechaIso) return null;
+  const d = new Date(fechaIso);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function etiquetaMes(clave){
+  const [anio, mes] = clave.split('-');
+  return NOMBRES_MES[parseInt(mes,10)-1] + ' ' + anio;
+}
+
+async function cargarYRenderOrdenes(){
+  const tbody = document.getElementById('ordenesBody');
+  tbody.innerHTML = '<tr><td colspan="6"><div class="empty">Cargando...</div></td></tr>';
+  try {
+    todasLasOrdenes = await peticion('GET', '/api/ordenes') || [];
+    poblarFiltroMeses();
+    renderOrdenesFiltradas();
+  } catch(e){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty">No se pudieron cargar las órdenes: ${e.message}</div></td></tr>`;
+  }
+}
+
+function poblarFiltroMeses(){
+  const select = document.getElementById('filtroMesOrdenes');
+  const claveActual = claveMes(new Date().toISOString());
+
+  const clavesPresentes = new Set(todasLasOrdenes.map(o => claveMes(o.fecha_cotizacion)).filter(Boolean));
+  clavesPresentes.add(claveActual); // el mes de hoy siempre aparece, aunque no tenga órdenes todavía
+
+  const claves = Array.from(clavesPresentes).sort().reverse(); // más reciente primero
+
+  const seleccionPrevia = select.value;
+  select.innerHTML = claves.map(c => `<option value="${c}">${etiquetaMes(c)}${c===claveActual?' (actual)':''}</option>`).join('')
+    + `<option value="todos">Todos los meses</option>`;
+
+  // Mantén la selección del usuario si sigue existiendo; si no, usa el mes actual por defecto
+  select.value = claves.includes(seleccionPrevia) || seleccionPrevia === 'todos' ? seleccionPrevia : claveActual;
+}
+
+function renderOrdenesFiltradas(){
+  const tbody = document.getElementById('ordenesBody');
+  const filtro = document.getElementById('filtroMesOrdenes').value;
+
+  const ordenes = filtro === 'todos'
+    ? todasLasOrdenes
+    : todasLasOrdenes.filter(o => claveMes(o.fecha_cotizacion) === filtro);
+
+  if(ordenes.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No hay órdenes de servicio en este periodo</div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = ordenes.map(o => {
+    const estadoInfo = ETIQUETAS_ESTADO_ORDEN[o.estado] || {texto:o.estado, clase:'badge-pink'};
+    const siguiente = SIGUIENTE_ESTADO[o.estado];
+    const boton = siguiente
+      ? `<button class="btn btn-pink btn-sm" onclick="cambiarEstadoOrden('${o.id_orden}','${siguiente}')">${TEXTO_BOTON_SIGUIENTE[o.estado]}</button>`
+      : '';
+    return `<tr>
+      <td class="name">${escapeHTML(o.nombre_cliente)}</td>
+      <td>${escapeHTML(o.dispositivo)} (${escapeHTML(o.modelo_especifico||'')})</td>
+      <td>${escapeHTML(o.problema)}</td>
+      <td><span class="badge ${estadoInfo.clase}">${estadoInfo.texto}</span></td>
+      <td>${o.fecha_cotizacion ? new Date(o.fecha_cotizacion).toLocaleDateString('es-MX') : ''}</td>
+      <td>${boton}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function cambiarEstadoOrden(idOrden, nuevoEstado){
+  try {
+    await peticion('PATCH', '/api/ordenes/'+idOrden+'/estado', { estado: nuevoEstado });
+    await cargarYRenderOrdenes();
+  } catch(e){
+    alert('No se pudo actualizar el estatus: ' + e.message);
+  }
+}
+
+/* ── EXPORT CSV — mismo formato que tendrán las hojas de Sheets ──*/
+function exportarInventarioCSV(){
+  const header='id,marca,calidad,modelo,precio,stock,stock_minimo,fecha_alta\n';
+  const rows=inventario.map(i=>`${i.id},${i.marca},${i.calidad},"${i.modelo}",${i.precio},${i.stock},${i.minStock},${i.fechaAlta||''}`).join('\n');
+  descargarCSV(header+rows,'inventario_tecnocel.csv');
+}
+function exportarMovimientosCSV(){
+  const header='id_movimiento,id_pieza,marca,modelo,tipo,cantidad,stock_resultante,fecha,motivo\n';
+  const rows=movimientos.map(m=>`${m.idMovimiento},${m.idPieza},${m.marca},"${m.modelo}",${m.tipo},${m.cantidad},${m.stockResultante},${m.fecha},${m.motivo}`).join('\n');
+  descargarCSV(header+rows,'movimientos_tecnocel.csv');
+}
+function descargarCSV(contenido,nombre){
+  const blob=new Blob([contenido],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nombre;a.click();
+}
+
+/* ── DESCARGAR ANÁLISIS DE IA — sin correr ningún código, un solo clic ──*/
+async function descargarAnalisisIA(){
+  const item = document.querySelector('.nav-item[onclick="descargarAnalisisIA()"]');
+  const textoOriginal = item ? item.textContent : '';
+  if(item) item.textContent = 'Generando archivo...';
+  try {
+    const token = localStorage.getItem('tc_admin_auth');
+    const res = await fetch(API_URL + '/api/analisis/descargar', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if(res.status === 401){ localStorage.removeItem('tc_admin_auth'); window.location.href = 'login.html'; return; }
+    if(!res.ok){ throw new Error('El servidor no pudo generar el archivo.'); }
+    const blob = await res.blob();
+    const fecha = new Date().toISOString().slice(0,10);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `tecnocel-analisis-ia-${fecha}.xlsx`;
+    a.click();
+  } catch(e){
+    alert('No se pudo descargar el análisis: ' + e.message);
+  }
+  if(item) item.textContent = textoOriginal;
+}
+
+/* ── API para el escáner PWA (descuento automático vía QR) ───────*/
+window.tc_descontarStock = async function(id, motivo){
+  try {
+    const resultado = await peticion('POST', '/api/inventario/'+id+'/usar', { motivo: motivo||'reparacion' });
+    await cargarDatosIniciales();
+    return { ok:true, modelo: resultado.modelo, stock: resultado.stock };
+  } catch(e){
+    return { ok:false, msg: e.message };
+  }
+};
+
+/* ── TEMA CLARO / OSCURO ──────────────────────────────────────────*/
+function alternarTema(){
+  const esClaro = document.body.classList.toggle('light');
+  localStorage.setItem('tc_theme', esClaro ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = esClaro ? 'Modo oscuro' : 'Modo claro';
+}
+function cargarTema(){
+  const guardado = localStorage.getItem('tc_theme');
+  if(guardado==='light'){
+    document.body.classList.add('light');
+    document.getElementById('themeToggle').textContent = 'Modo oscuro';
+  }
+}
+
+/* ── SESIÓN ─────────────────────────────────────────────────────*/
+async function cerrarSesion(){
+  const token = localStorage.getItem('tc_admin_auth');
+  try{
+    await fetch(API_URL + '/api/auth/logout', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+token}
+    });
+  } catch(e){}
+  localStorage.removeItem('tc_admin_auth');
+  localStorage.removeItem('tc_admin_nombre');
+  localStorage.removeItem('tc_admin_rol');
+  localStorage.removeItem('tc_admin_id');
+  window.location.href = 'login.html';
+}
+
+/* ── INIT ───────────────────────────────────────────────────────*/
+const nombreGuardado = localStorage.getItem('tc_admin_nombre');
+if(nombreGuardado) document.getElementById('nombreTrabajador').textContent = 'Hola, '+nombreGuardado;
+mostrarSeccionAdminSiAplica();
+cargarTema();
+cargarDatosIniciales();
+document.addEventListener('keydown',e=>{if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));});
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+</script>
+</body>
+</html>
