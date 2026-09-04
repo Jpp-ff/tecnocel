@@ -535,7 +535,7 @@ async function cargarDatosIniciales() {
 function actualizarStats(){
   const total = inventario.length;
   const enStock = inventario.filter(i=>i.stock>0).length;
-  const stockBajo = inventario.filter(i=>i.stock>0 && i.stock<=i.minStock).length;
+  const stockBajo = inventario.filter(i=>i.stock===1).length;
   const sinStock = inventario.filter(i=>i.stock===0).length;
   const valorTotal = inventario.reduce((acc,i)=>acc+(i.precio*i.stock),0);
   document.getElementById('statTotal').textContent = total;
@@ -543,7 +543,7 @@ function actualizarStats(){
   document.getElementById('statLow').textContent = stockBajo;
   document.getElementById('statEmpty').textContent = sinStock;
   document.getElementById('statValor').textContent = '$'+valorTotal.toLocaleString('es-MX');
-  const alertas = inventario.filter(i=>i.stock<=i.minStock && i.stock>0);
+  const alertas = inventario.filter(i=>i.stock===1);
   const banner = document.getElementById('alertBanner');
   if(alertas.length>0){
     banner.style.display='flex';
@@ -554,8 +554,8 @@ function actualizarStats(){
 /* ── SEMÁFORO DE STOCK ────────────────────────────────────────────
    rojo: 0-2 piezas · amarillo: 3-4 piezas · verde: 5 o más (tu máximo ideal) */
 function colorSemaforo(stock){
-  if(stock<3) return 'rojo';
-  if(stock<5) return 'amarillo';
+  if(stock===0) return 'rojo';
+  if(stock===1) return 'amarillo';
   return 'verde';
 }
 
@@ -571,12 +571,12 @@ function renderTabla(){
   if(q) data = data.filter(i=>(i.modelo+i.marca+i.calidad).toLowerCase().includes(q));
   if(fMarca) data = data.filter(i=>i.marca===fMarca);
   if(fCal) data = data.filter(i=>i.calidad===fCal);
-  if(fStock==='low') data = data.filter(i=>i.stock>0&&i.stock<=i.minStock);
+  if(fStock==='low') data = data.filter(i=>i.stock===1);
   if(fStock==='empty') data = data.filter(i=>i.stock===0);
   const tbody = document.getElementById('tablaBody');
   if(data.length===0){ tbody.innerHTML='<tr><td colspan="6"><div class="empty">No se encontraron resultados</div></td></tr>'; return; }
   tbody.innerHTML = data.map(item=>{
-    const sClass = item.stock===0?'low':item.stock<=item.minStock?'warn':'ok';
+    const sClass = item.stock===0?'low':item.stock===1?'warn':'ok';
     const calClass = CALIDAD_COLORS[item.calidad]||'badge-pink';
     return `<tr>
       <td><span class="badge badge-pink">${escapeHTML(item.marca)}</span></td>
@@ -678,7 +678,7 @@ async function confirmarAjuste(){
     const resultado = await peticion('POST', '/api/inventario/'+ajusteTarget+'/ajustar', { cantidad: cantidadReal, motivo });
     cerrarModal('modalStock');
     await cargarDatosIniciales();
-    if(ajusteTipo==='sub' && resultado.stock <= item.minStock && resultado.stock > 0){
+    if(ajusteTipo==='sub' && resultado.stock === 1){
       setTimeout(()=>alert('Stock bajo en: '+resultado.modelo+' (quedan '+resultado.stock+' piezas)'),150);
     }
   } catch(e){
