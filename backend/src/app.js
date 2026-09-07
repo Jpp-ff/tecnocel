@@ -15,6 +15,10 @@ const analisisRouter = require('./controllers/analisis.controller');
 
 const app = express();
 
+// Railway (igual que Heroku/Render) coloca la app detrás de un proxy inverso.
+// Sin esto, express-rate-limit rechaza cada petición por el header X-Forwarded-For.
+app.set('trust proxy', 1);
+
 // ── Seguridad ────────────────────────────────────
 app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
